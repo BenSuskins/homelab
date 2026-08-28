@@ -16,12 +16,12 @@
     source: pull
     force_source: true
   vars:
-    image: ghcr.io/calibrain/shelfmark:v1.3.11
+    image: ghcr.io/calibrain/shelfmark:v1.3.12
 
 - name: SHELFMARK - Create container
   community.docker.docker_container:
     name: shelfmark
-    image: ghcr.io/calibrain/shelfmark:v1.3.11
+    image: ghcr.io/calibrain/shelfmark:v1.3.12
     restart_policy: always
     state: started
     pull: false
