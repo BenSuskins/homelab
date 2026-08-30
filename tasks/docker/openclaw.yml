@@ -5,8 +5,8 @@
 #
 # Deliberately not recursive: OpenClaw owns everything under these paths at
 # runtime (workspace files, plugin installs, browser caches), and re-applying a
-# directory mode across that tree every run would both churn and flip the
-# seeded openclaw.json below back to 0750.
+# directory mode across that tree every run would both churn and flip
+# openclaw.json back to 0750.
 - name: OPENCLAW - Create directories and permissions
   ansible.builtin.file:
     path: "{{ item }}"
@@ -18,45 +18,18 @@
     - "{{ base_dir }}/openclaw/state"
     - "{{ base_dir }}/openclaw/auth"
 
-- name: OPENCLAW - Stat configuration file
-  ansible.builtin.stat:
-    path: "{{ base_dir }}/openclaw/state/openclaw.json"
-  register: openclaw_config
-
-# Seeded once, then left alone: the Control UI writes settings back to this same
-# file, so re-templating every run would revert anything changed in the dashboard.
-- name: OPENCLAW - Template configuration file
+# gateway.mode is boot-critical — the gateway refuses to start without it and
+# will not guess. allowedOrigins has to match how the container is published,
+# or the Control UI is rejected. Both live in the template, which is applied
+# every run like every other templated container here.
+- name: OPENCLAW - Create configuration
   ansible.builtin.template:
     src: ../config/openclaw/openclaw.json.j2
     dest: "{{ base_dir }}/openclaw/state/openclaw.json"
     owner: "1000"
     group: "1000"
     mode: "0600"
-  when: not openclaw_config.stat.exists
-
-- name: OPENCLAW - Read existing configuration
-  ansible.builtin.slurp:
-    src: "{{ base_dir }}/openclaw/state/openclaw.json"
-  register: openclaw_config_existing
-  when: openclaw_config.stat.exists
-
-# The gateway refuses to start when the config exists but gateway.mode is absent
-# — it treats that as clobbered config rather than guessing 'local'. A config
-# seeded before this key was templated would otherwise crash-loop forever, since
-# the seeding task above only fires when the file is missing. Merge the key in
-# instead of re-templating, so anything set in the Control UI survives.
-- name: OPENCLAW - Repair missing gateway.mode
-  ansible.builtin.copy:
-    content: "{{ openclaw_existing | combine({'gateway': {'mode': 'local'}}, recursive=true) | to_nice_json }}"
-    dest: "{{ base_dir }}/openclaw/state/openclaw.json"
-    owner: "1000"
-    group: "1000"
-    mode: "0600"
-  vars:
-    openclaw_existing: "{{ openclaw_config_existing.content | default('e30=') | b64decode | from_json }}"
-  when:
-    - openclaw_config.stat.exists
-    - openclaw_existing.gateway.mode is not defined
+  register: openclaw_config
 
 - name: OPENCLAW - Pre-pull image
   community.docker.docker_image:
@@ -99,6 +72,15 @@
       OPENCLAW_WORKSPACE_DIR: /home/node/.openclaw/workspace
       OPENCLAW_GATEWAY_TOKEN: "{{ OPENCLAW_GATEWAY_TOKEN }}"
       OPENROUTER_API_KEY: "{{ OPENROUTER_API_KEY }}"
+
+# The gateway reads its config at startup and a running container will not pick
+# up a rewritten file on its own. #169 masked this: that config fix landed while
+# the container was crash-looping, so the restart policy reloaded it for free.
+# A healthy container has to be told.
+- name: OPENCLAW - Restart to apply config changes
+  ansible.builtin.command: docker restart openclaw
+  when: openclaw_config.changed
+  changed_when: true
 
 - name: OPENCLAW - Define service entry
   ansible.builtin.set_fact:
