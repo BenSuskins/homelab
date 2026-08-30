@@ -6,7 +6,7 @@ containers:
   - mcpjungle
   - media-server-mcp
   # AI
-  - hermes
+  - openclaw
   # Work
   - workboard
   - workboard-mcp

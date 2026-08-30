@@ -1,0 +1,97 @@
+---
+# OpenClaw runs as uid 1000 (`node`) inside the image and will not start if the
+# bind mounts are owned by anyone else, so the ownership here is the numeric uid
+# rather than {{ username }} — it has to match the container's user, not the host's.
+#
+# Deliberately not recursive: OpenClaw owns everything under these paths at
+# runtime (workspace files, plugin installs, browser caches), and re-applying a
+# directory mode across that tree every run would both churn and flip the
+# seeded openclaw.json below back to 0750.
+- name: OPENCLAW - Create directories and permissions
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "1000"
+    group: "1000"
+    mode: "0750"
+  loop:
+    - "{{ base_dir }}/openclaw/state"
+    - "{{ base_dir }}/openclaw/auth"
+
+- name: OPENCLAW - Stat configuration file
+  ansible.builtin.stat:
+    path: "{{ base_dir }}/openclaw/state/openclaw.json"
+  register: openclaw_config
+
+# Seeded once, then left alone: the Control UI writes settings back to this same
+# file, so re-templating every run would revert anything changed in the dashboard.
+- name: OPENCLAW - Template configuration file
+  ansible.builtin.template:
+    src: ../config/openclaw/openclaw.json.j2
+    dest: "{{ base_dir }}/openclaw/state/openclaw.json"
+    owner: "1000"
+    group: "1000"
+    mode: "0600"
+  when: not openclaw_config.stat.exists
+
+- name: OPENCLAW - Pre-pull image
+  community.docker.docker_image:
+    name: "{{ image }}"
+    source: pull
+    force_source: true
+  vars:
+    image: ghcr.io/openclaw/openclaw:2026.7.1-2
+
+- name: OPENCLAW - Create container
+  community.docker.docker_container:
+    name: openclaw
+    image: ghcr.io/openclaw/openclaw:2026.7.1-2
+    restart_policy: always
+    state: started
+    pull: false
+    init: true
+    networks:
+      - name: homelab
+    command: ["node", "dist/index.js", "gateway", "--bind", "lan", "--port", "18789"]
+    ports:
+      - "18789:18789"
+    volumes:
+      - "{{ base_dir }}/openclaw/state:/home/node/.openclaw"
+      - "{{ base_dir }}/openclaw/auth:/home/node/.config/openclaw"
+    cap_drop:
+      - NET_RAW
+      - NET_ADMIN
+    security_opts:
+      - no-new-privileges:true
+    env:
+      TZ: "{{ timezone }}"
+      HOME: /home/node
+      OPENCLAW_HOME: /home/node
+      # Pinned to container paths so the host bind-mount sources can never leak
+      # into the paths OpenClaw resolves at runtime (upstream compose does the same).
+      OPENCLAW_STATE_DIR: /home/node/.openclaw
+      OPENCLAW_CONFIG_DIR: /home/node/.openclaw
+      OPENCLAW_CONFIG_PATH: /home/node/.openclaw/openclaw.json
+      OPENCLAW_WORKSPACE_DIR: /home/node/.openclaw/workspace
+      OPENCLAW_GATEWAY_TOKEN: "{{ OPENCLAW_GATEWAY_TOKEN }}"
+      OPENROUTER_API_KEY: "{{ OPENROUTER_API_KEY }}"
+
+- name: OPENCLAW - Define service entry
+  ansible.builtin.set_fact:
+    openclaw_entry:
+      name: openclaw
+      description: AI agent gateway
+      host: "openclaw.{{ domain }}"
+      ip: "{{ inventory_hostname }}"
+      friendly_name: "{{ friendly_name }}"
+      port: 18789
+      scheme: http
+      secured: true
+      healthcheck: true
+      healthcheck_path: /readyz
+      homepage: true
+      proxied: true
+
+- name: OPENCLAW - Append to docker_services
+  ansible.builtin.set_fact:
+    docker_services: "{{ docker_services + [openclaw_entry] }}"
