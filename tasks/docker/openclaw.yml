@@ -34,6 +34,30 @@
     mode: "0600"
   when: not openclaw_config.stat.exists
 
+- name: OPENCLAW - Read existing configuration
+  ansible.builtin.slurp:
+    src: "{{ base_dir }}/openclaw/state/openclaw.json"
+  register: openclaw_config_existing
+  when: openclaw_config.stat.exists
+
+# The gateway refuses to start when the config exists but gateway.mode is absent
+# — it treats that as clobbered config rather than guessing 'local'. A config
+# seeded before this key was templated would otherwise crash-loop forever, since
+# the seeding task above only fires when the file is missing. Merge the key in
+# instead of re-templating, so anything set in the Control UI survives.
+- name: OPENCLAW - Repair missing gateway.mode
+  ansible.builtin.copy:
+    content: "{{ openclaw_existing | combine({'gateway': {'mode': 'local'}}, recursive=true) | to_nice_json }}"
+    dest: "{{ base_dir }}/openclaw/state/openclaw.json"
+    owner: "1000"
+    group: "1000"
+    mode: "0600"
+  vars:
+    openclaw_existing: "{{ openclaw_config_existing.content | default('e30=') | b64decode | from_json }}"
+  when:
+    - openclaw_config.stat.exists
+    - openclaw_existing.gateway.mode is not defined
+
 - name: OPENCLAW - Pre-pull image
   community.docker.docker_image:
     name: "{{ image }}"
