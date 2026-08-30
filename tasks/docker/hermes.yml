@@ -1,0 +1,50 @@
+---
+- name: HERMES - Pre-pull image
+  community.docker.docker_image:
+    name: "{{ image }}"
+    source: pull
+    force_source: true
+  vars:
+    image: nousresearch/hermes-agent:v2026.8.27
+
+- name: HERMES - Create container
+  community.docker.docker_container:
+    name: hermes
+    image: nousresearch/hermes-agent:v2026.8.27
+    restart_policy: always
+    state: started
+    pull: false
+    networks:
+      - name: homelab
+    command: gateway run
+    ports:
+      - "8642:8642"
+      - "9119:9119"
+      - "8080:8080"
+    volumes:
+      - "{{ base_dir }}/hermes:/opt/data"
+    env:
+      HERMES_DASHBOARD: "1"
+      OPENROUTER_API_KEY: "{{ OPENROUTER_API_KEY }}"
+      HERMES_DASHBOARD_BASIC_AUTH_USERNAME: hermes
+      HERMES_DASHBOARD_BASIC_AUTH_PASSWORD: hermes
+
+- name: HERMES - Define service entry
+  ansible.builtin.set_fact:
+    hermes_entry:
+      name: hermes
+      description: Hermes AI agent
+      icon: hermes
+      host: "hermes.{{ domain }}"
+      ip: "{{ inventory_hostname }}"
+      friendly_name: "{{ friendly_name }}"
+      port: 9119
+      scheme: http
+      secured: true
+      homepage: true
+      proxied: true
+      healthcheck: true
+
+- name: HERMES - Append to docker_services
+  ansible.builtin.set_fact:
+    docker_services: "{{ docker_services + [hermes_entry] }}"
