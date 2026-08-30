@@ -49,6 +49,9 @@
     init: true
     networks:
       - name: homelab
+    # --bind agrees with gateway.bind in the template on purpose. The flag binds
+    # the running process; the config value is what the CLI and plugins read, and
+    # device pairing refuses to issue a URL when it sees the loopback default.
     command: ["node", "dist/index.js", "gateway", "--bind", "lan", "--port", "18789"]
     ports:
       - "18789:18789"
