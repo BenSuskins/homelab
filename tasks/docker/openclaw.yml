@@ -5,8 +5,8 @@
 #
 # Deliberately not recursive: OpenClaw owns everything under these paths at
 # runtime (workspace files, plugin installs, browser caches), and re-applying a
-# directory mode across that tree every run would both churn and flip the
-# seeded openclaw.json below back to 0750.
+# directory mode across that tree every run would both churn and flip
+# openclaw.json back to 0750.
 - name: OPENCLAW - Create directories and permissions
   ansible.builtin.file:
     path: "{{ item }}"
@@ -18,61 +18,18 @@
     - "{{ base_dir }}/openclaw/state"
     - "{{ base_dir }}/openclaw/auth"
 
-# Ansible owns these keys, the Control UI owns the rest of openclaw.json.
 # gateway.mode is boot-critical — the gateway refuses to start without it and
-# will not guess. allowedOrigins has to match how the container is actually
-# published, so it is deployment shape, not a user preference. Both therefore
-# belong in code. Keeping them here rather than in the seed template means one
-# source of truth: the reconcile task below applies them to existing configs too.
-- name: OPENCLAW - Define Ansible-managed configuration
-  ansible.builtin.set_fact:
-    openclaw_managed_config:
-      gateway:
-        mode: local
-        controlUi:
-          # Only the proxied origin needs listing. OpenClaw already accepts
-          # same-origin loads from RFC1918 hosts, which covers reaching the
-          # published port directly on the LAN or over the tailnet.
-          allowedOrigins:
-            - "https://openclaw.{{ domain }}"
-
-- name: OPENCLAW - Stat configuration file
-  ansible.builtin.stat:
-    path: "{{ base_dir }}/openclaw/state/openclaw.json"
-  register: openclaw_config
-
-# Seeded once: the Control UI writes settings back to this same file, so
-# re-templating every run would revert anything changed in the dashboard.
-- name: OPENCLAW - Seed configuration file
+# will not guess. allowedOrigins has to match how the container is published,
+# or the Control UI is rejected. Both live in the template, which is applied
+# every run like every other templated container here.
+- name: OPENCLAW - Create configuration
   ansible.builtin.template:
     src: ../config/openclaw/openclaw.json.j2
     dest: "{{ base_dir }}/openclaw/state/openclaw.json"
     owner: "1000"
     group: "1000"
     mode: "0600"
-  when: not openclaw_config.stat.exists
-
-- name: OPENCLAW - Read configuration
-  ansible.builtin.slurp:
-    src: "{{ base_dir }}/openclaw/state/openclaw.json"
-  register: openclaw_config_existing
-
-# Merges the managed keys into whatever is on disk, so a config seeded before a
-# key existed is repaired rather than left broken, and Control UI settings are
-# preserved. The comparison keeps it idempotent — it only writes when the merge
-# would actually change something, so it does not churn or restart every run.
-- name: OPENCLAW - Reconcile Ansible-managed configuration
-  ansible.builtin.copy:
-    content: "{{ openclaw_merged | to_nice_json }}"
-    dest: "{{ base_dir }}/openclaw/state/openclaw.json"
-    owner: "1000"
-    group: "1000"
-    mode: "0600"
-  vars:
-    openclaw_existing: "{{ openclaw_config_existing.content | b64decode | from_json }}"
-    openclaw_merged: "{{ openclaw_existing | combine(openclaw_managed_config, recursive=true) }}"
-  when: openclaw_merged != openclaw_existing
-  register: openclaw_config_reconciled
+  register: openclaw_config
 
 - name: OPENCLAW - Pre-pull image
   community.docker.docker_image:
@@ -116,13 +73,13 @@
       OPENCLAW_GATEWAY_TOKEN: "{{ OPENCLAW_GATEWAY_TOKEN }}"
       OPENROUTER_API_KEY: "{{ OPENROUTER_API_KEY }}"
 
-# The gateway reads allowed origins at startup, and a running container will not
-# pick up a reconciled config on its own. Previously this was masked: the config
-# fix in #169 landed while the container was crash-looping, so the restart policy
-# reloaded it for free. A healthy container needs to be told.
+# The gateway reads its config at startup and a running container will not pick
+# up a rewritten file on its own. #169 masked this: that config fix landed while
+# the container was crash-looping, so the restart policy reloaded it for free.
+# A healthy container has to be told.
 - name: OPENCLAW - Restart to apply config changes
   ansible.builtin.command: docker restart openclaw
-  when: openclaw_config_reconciled.changed
+  when: openclaw_config.changed
   changed_when: true
 
 - name: OPENCLAW - Define service entry
