@@ -115,6 +115,13 @@
 # so its verification failure never counts as active. Consent is the wrong
 # alternative here: acceptance is bound to the exact artifact, so every Renovate
 # image bump would need it granted again.
+#
+# trustedProxies is the Traefik host, taken from the inventory rather than
+# written as a literal. 2.0 attributes proxy-shaped traffic before it
+# authenticates it: a request carrying forwarded-client headers from a source
+# not listed here is rejected with proxy_attribution_required, whatever the auth
+# mode. One address, not the subnet — upstream's own hardening checklist asks
+# for the actual proxy IPs and nothing wider.
 - name: OPENCLAW - Apply deployment shape to the seeded configuration
   ansible.builtin.command:
     argv:
@@ -155,6 +162,9 @@
       - path: plugins.deny
         value:
           - perplexity
+      - path: gateway.trustedProxies
+        value:
+          - "{{ groups['development'] | first }}"
   environment:
     OPENCLAW_GATEWAY_TOKEN: "{{ OPENCLAW_GATEWAY_TOKEN }}"
     OPENROUTER_API_KEY: "{{ OPENROUTER_API_KEY }}"
@@ -217,7 +227,11 @@
       friendly_name: "{{ friendly_name }}"
       port: 18789
       scheme: http
-      secured: true
+      # No authelia middleware: the gateway does its own auth. A non-loopback
+      # bind requires it, and onboarding set mode=token with the token held as a
+      # SecretRef, so the Control UI already asks for a credential. Putting
+      # Authelia in front only added a second, unrelated login.
+      secured: false
       healthcheck: true
       # 2.0 splits the probes: /healthz is liveness, /startupz is traffic
       # admission, /readyz is the deep channel-aware one. Gatus is monitoring
