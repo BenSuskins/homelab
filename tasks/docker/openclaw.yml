@@ -18,8 +18,9 @@
     - "{{ base_dir }}/openclaw/state"
     - "{{ base_dir }}/openclaw/auth"
 
-# 2.0 validates this file strictly: unknown keys, wrong types or bad values make
-# the gateway refuse to start. Every key below is in the 2.0 schema.
+# 2.0 validates this file strictly: an unknown key, a wrong type or a bad value
+# makes the gateway refuse to start rather than ignore it. Every key below is in
+# the 2.0 schema.
 #
 # gateway.mode is boot-critical — the gateway refuses to start without it and
 # will not guess. allowedOrigins has to match how the container is published, or
@@ -41,73 +42,8 @@
     name: "{{ image }}"
     source: pull
     force_source: true
-  register: openclaw_image
   vars:
     image: ghcr.io/openclaw/openclaw:2026.8.1
-
-- name: OPENCLAW - Inspect the running container
-  community.docker.docker_container_info:
-    name: openclaw
-  register: openclaw_container
-
-# An image change is the upgrade: `container.Image` is the id the running
-# container was created from, so comparing it against the id we just pulled says
-# whether the mounted state is about to be served by a different release. That
-# keeps the migration below off every ordinary run without a hand-maintained
-# "have we done v2 yet" marker that goes stale at the next major.
-#
-# `exists` is checked first (Jinja `and` short-circuits) because a host with no
-# container yet has no state to migrate.
-- name: OPENCLAW - Decide whether the state needs an upgrade migration
-  ansible.builtin.set_fact:
-    openclaw_upgrading: "{{ openclaw_container.exists and openclaw_container.container.Image != openclaw_image.image.Id }}"
-
-# Doctor writes the same SQLite databases the gateway has open, so the gateway
-# has to be down first — upstream is explicit that state migrations run against a
-# stopped gateway.
-- name: OPENCLAW - Stop the gateway before migrating its state
-  ansible.builtin.command: docker stop openclaw
-  when: openclaw_upgrading | bool
-  changed_when: true
-
-# Startup repairs cover most upgrades on their own, but 2.0 carries migrations
-# that reach past openclaw.json into stored sessions and automation routes
-# (`codex/*` and `openai-codex/*` model refs become `openai/*`, the bundled
-# OpenProse plugin is gone). When startup can't finish those safely it exits
-# rather than reporting healthy, which under `restart_policy: always` is a crash
-# loop instead of an error — so the documented one-shot doctor pass runs first,
-# with the same mounts and the new image.
-#
-# Run by image id, not tag, so it is exactly the image the container below gets.
-# Both supervisor variables are set: Docker owns the lifecycle here, and neither
-# doctor nor the gateway should be repairing or installing native services.
-- name: OPENCLAW - Migrate state with the pulled image (openclaw doctor --fix)
-  ansible.builtin.command:
-    argv:
-      - docker
-      - run
-      - --rm
-      - --init
-      - --security-opt=no-new-privileges:true
-      - --cap-drop=NET_RAW
-      - --cap-drop=NET_ADMIN
-      - --env=HOME=/home/node
-      - --env=OPENCLAW_HOME=/home/node
-      - --env=OPENCLAW_STATE_DIR=/home/node/.openclaw
-      - --env=OPENCLAW_CONFIG_DIR=/home/node/.openclaw
-      - --env=OPENCLAW_CONFIG_PATH=/home/node/.openclaw/openclaw.json
-      - --env=OPENCLAW_WORKSPACE_DIR=/home/node/.openclaw/workspace
-      - --env=OPENCLAW_SUPERVISOR_MODE=external
-      - --env=OPENCLAW_SERVICE_REPAIR_POLICY=external
-      - "--volume={{ base_dir }}/openclaw/state:/home/node/.openclaw"
-      - "--volume={{ base_dir }}/openclaw/auth:/home/node/.config/openclaw"
-      - "{{ openclaw_image.image.Id }}"
-      - node
-      - dist/index.js
-      - doctor
-      - --fix
-  when: openclaw_upgrading | bool
-  changed_when: true
 
 - name: OPENCLAW - Create container
   community.docker.docker_container:
@@ -146,8 +82,8 @@
       OPENCLAW_WORKSPACE_DIR: /home/node/.openclaw/workspace
       # 2.0 lets an external supervisor own the lifecycle. Docker's restart
       # policy is that supervisor, so refuse the self-update path and the native
-      # service manager the gateway would otherwise reach for — this container
-      # is replaced by Renovate bumping the tag above, not by OpenClaw.
+      # service manager the gateway would otherwise reach for — this container is
+      # replaced by Renovate bumping the tag above, not by OpenClaw.
       OPENCLAW_SUPERVISOR_MODE: external
       OPENCLAW_GATEWAY_TOKEN: "{{ OPENCLAW_GATEWAY_TOKEN }}"
       OPENROUTER_API_KEY: "{{ OPENROUTER_API_KEY }}"
@@ -155,13 +91,10 @@
 # The gateway reads its config at startup and a running container will not pick
 # up a rewritten file on its own. #169 masked this: that config fix landed while
 # the container was crash-looping, so the restart policy reloaded it for free.
-# A healthy container has to be told. An upgrade already replaced the container
-# above, which read the new file on the way up.
+# A healthy container has to be told.
 - name: OPENCLAW - Restart to apply config changes
   ansible.builtin.command: docker restart openclaw
-  when:
-    - openclaw_config.changed
-    - not (openclaw_upgrading | bool)
+  when: openclaw_config.changed
   changed_when: true
 
 - name: OPENCLAW - Define service entry
