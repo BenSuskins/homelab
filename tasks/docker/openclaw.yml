@@ -28,6 +28,17 @@
 # back into the Control UI, so it has to be the Traefik hostname rather than the
 # container's own address. All three live in the template, which is applied every
 # run like every other templated container here.
+#
+# plugins.deny lists perplexity because OPENROUTER_API_KEY below is one of the
+# env vars its manifest declares for its provider. That is enough for 2.0 to
+# treat the plugin as configured and try to install it from the official
+# catalog, and an install needs capability consent nothing here can give. The
+# unconsented install then fails plugin verification, and 2.0 refuses to report
+# the gateway ready — a crash loop under restart_policy: always, not an error.
+# Denying it settles that in config: a denied plugin resolves to disabled, so
+# its verification failure never counts as active. Granting consent instead
+# would not survive, because acceptance is bound to the exact artifact and
+# every Renovate image bump is a new one.
 - name: OPENCLAW - Create configuration
   ansible.builtin.template:
     src: ../config/openclaw/openclaw.json.j2
