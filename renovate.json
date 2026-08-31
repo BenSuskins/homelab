@@ -20,14 +20,14 @@
       "groupName": "Ansible Docker Images"
     },
     {
-      "description": "OpenClaw publishes CalVer tags with a numeric build suffix (2026.7.1-2). Default docker versioning treats '-2' as a compatibility suffix and would only ever offer other '-2' tags; this regex orders on the build number and structurally excludes the -beta.N prereleases.",
+      "description": "OpenClaw publishes CalVer tags that carry a numeric build suffix only when a release is rebuilt (2026.7.1-2, but plain 2026.8.1). Default docker versioning treats '-2' as a compatibility suffix and would only ever offer other '-2' tags; this regex makes the build optional so both shapes are ordered together, and structurally excludes the -beta.N prereleases and the -slim/-browser/-amd64/-arm64 variants.",
       "matchDatasources": [
         "docker"
       ],
       "matchPackageNames": [
         "ghcr.io/openclaw/openclaw"
       ],
-      "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)-(?<build>\\d+)$"
+      "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(?:-(?<build>\\d+))?$"
     }
   ],
   "terraform": {
