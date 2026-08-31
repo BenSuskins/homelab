@@ -18,32 +18,148 @@
     - "{{ base_dir }}/openclaw/state"
     - "{{ base_dir }}/openclaw/auth"
 
-# 2.0 validates this file strictly: an unknown key, a wrong type or a bad value
-# makes the gateway refuse to start rather than ignore it. Every key below is in
-# the 2.0 schema.
-#
-# gateway.mode is boot-critical — the gateway refuses to start without it and
-# will not guess. allowedOrigins has to match how the container is published, or
-# the Control UI is rejected. publicOrigin is what 2.0 stamps into deep links
-# back into the Control UI, so it has to be the Traefik hostname rather than the
-# container's own address. All three live in the template, which is applied every
-# run like every other templated container here.
-- name: OPENCLAW - Create configuration
-  ansible.builtin.template:
-    src: ../config/openclaw/openclaw.json.j2
-    dest: "{{ base_dir }}/openclaw/state/openclaw.json"
-    owner: "1000"
-    group: "1000"
-    mode: "0600"
-  register: openclaw_config
-
 - name: OPENCLAW - Pre-pull image
   community.docker.docker_image:
     name: "{{ image }}"
     source: pull
     force_source: true
+  register: openclaw_image
   vars:
     image: ghcr.io/openclaw/openclaw:2026.8.1
+
+- name: OPENCLAW - Check whether the gateway has been onboarded
+  ansible.builtin.stat:
+    path: "{{ base_dir }}/openclaw/state/openclaw.json"
+  register: openclaw_config
+
+# openclaw.json is seeded by OpenClaw's own headless onboarding rather than
+# templated here. Hand-authoring it against a schema that refuses to start on a
+# missing or unknown key is what produced #169 (gateway.mode), #170
+# (allowedOrigins) and #171 (gateway.bind) — three crash loops in three days.
+# Onboarding writes a config its own validator accepts.
+#
+# The trade is that the config is host state after this: OpenClaw and the
+# Control UI own it, Ansible seeds it once and does not reconcile it. Changing a
+# seeded value on a live host is `openclaw config set`, not an edit here.
+#
+# --secret-input-mode ref stores credentials as env SecretRefs rather than
+# copying them into the file: the auth profile gets a keyRef naming
+# OPENROUTER_API_KEY, and --gateway-token-ref-env does the same for
+# gateway.auth.token. Both env vars have to be present in this one-shot, which
+# is why they are passed here as well as to the container below.
+#
+# --skip-health because the gateway is not running yet; --no-install-daemon
+# because Docker supervises it; --skip-channels/-search/-hooks/-ui because this
+# is a dashboard-only deployment with no messaging channels.
+- name: OPENCLAW - Seed configuration with headless onboarding
+  ansible.builtin.command:
+    argv:
+      - docker
+      - run
+      - --rm
+      - --init
+      - --security-opt=no-new-privileges:true
+      - --cap-drop=NET_RAW
+      - --cap-drop=NET_ADMIN
+      - --env=HOME=/home/node
+      - --env=OPENCLAW_HOME=/home/node
+      - --env=OPENCLAW_STATE_DIR=/home/node/.openclaw
+      - --env=OPENCLAW_CONFIG_DIR=/home/node/.openclaw
+      - --env=OPENCLAW_CONFIG_PATH=/home/node/.openclaw/openclaw.json
+      - --env=OPENCLAW_WORKSPACE_DIR=/home/node/.openclaw/workspace
+      - --env=OPENCLAW_SUPERVISOR_MODE=external
+      # Value-less --env forwards from this task's own environment below, so
+      # neither secret is ever part of the command line Ansible would echo.
+      - --env=OPENCLAW_GATEWAY_TOKEN
+      - --env=OPENROUTER_API_KEY
+      - "--volume={{ base_dir }}/openclaw/state:/home/node/.openclaw"
+      - "--volume={{ base_dir }}/openclaw/auth:/home/node/.config/openclaw"
+      - "{{ openclaw_image.image.Id }}"
+      - node
+      - dist/index.js
+      - onboard
+      - --non-interactive
+      - --accept-risk
+      - --mode=local
+      - --auth-choice=openrouter-api-key
+      - --secret-input-mode=ref
+      - --gateway-auth=token
+      - --gateway-token-ref-env=OPENCLAW_GATEWAY_TOKEN
+      - --skip-health
+      - --no-install-daemon
+      - --skip-channels
+      - --skip-search
+      - --skip-hooks
+      - --skip-ui
+  environment:
+    OPENCLAW_GATEWAY_TOKEN: "{{ OPENCLAW_GATEWAY_TOKEN }}"
+    OPENROUTER_API_KEY: "{{ OPENROUTER_API_KEY }}"
+  when: not openclaw_config.stat.exists
+  changed_when: true
+
+# Onboarding writes gateway.mode itself but knows nothing about how this
+# deployment is published, so the shape keys are set immediately after it, in
+# the same seed. This is the flow upstream's own Docker guide uses.
+#
+# bind=lan because the container publishes a port and the loopback default would
+# make it unreachable. publicOrigin and allowedOrigins are the Traefik hostname:
+# the first is what 2.0 stamps into Control UI deep links, the second is the
+# browser-origin allowlist for WebSocket connects.
+#
+# perplexity is denied because OPENROUTER_API_KEY is one of the env vars its
+# manifest declares for its provider, which is enough for 2.0 to treat it as
+# configured and try to install it from the official catalog. That install needs
+# capability consent no headless run can give, the unconsented install fails
+# plugin verification, and 2.0 then refuses to report the gateway ready — a
+# crash loop under restart_policy: always. A denied plugin resolves to disabled,
+# so its verification failure never counts as active. Consent is the wrong
+# alternative here: acceptance is bound to the exact artifact, so every Renovate
+# image bump would need it granted again.
+- name: OPENCLAW - Apply deployment shape to the seeded configuration
+  ansible.builtin.command:
+    argv:
+      - docker
+      - run
+      - --rm
+      - --init
+      - --security-opt=no-new-privileges:true
+      - --cap-drop=NET_RAW
+      - --cap-drop=NET_ADMIN
+      - --env=HOME=/home/node
+      - --env=OPENCLAW_HOME=/home/node
+      - --env=OPENCLAW_STATE_DIR=/home/node/.openclaw
+      - --env=OPENCLAW_CONFIG_DIR=/home/node/.openclaw
+      - --env=OPENCLAW_CONFIG_PATH=/home/node/.openclaw/openclaw.json
+      # The seeded config holds SecretRefs naming these, and `config set`
+      # validates the whole file before writing, so they have to resolve here.
+      - --env=OPENCLAW_GATEWAY_TOKEN
+      - --env=OPENROUTER_API_KEY
+      - "--volume={{ base_dir }}/openclaw/state:/home/node/.openclaw"
+      - "--volume={{ base_dir }}/openclaw/auth:/home/node/.config/openclaw"
+      - "{{ openclaw_image.image.Id }}"
+      - node
+      - dist/index.js
+      - config
+      - set
+      - --batch-json
+      - "{{ openclaw_shape | to_json }}"
+  vars:
+    openclaw_shape:
+      - path: gateway.bind
+        value: lan
+      - path: gateway.publicOrigin
+        value: "https://openclaw.{{ domain }}"
+      - path: gateway.controlUi.allowedOrigins
+        value:
+          - "https://openclaw.{{ domain }}"
+      - path: plugins.deny
+        value:
+          - perplexity
+  environment:
+    OPENCLAW_GATEWAY_TOKEN: "{{ OPENCLAW_GATEWAY_TOKEN }}"
+    OPENROUTER_API_KEY: "{{ OPENROUTER_API_KEY }}"
+  when: not openclaw_config.stat.exists
+  changed_when: true
 
 - name: OPENCLAW - Create container
   community.docker.docker_container:
@@ -55,10 +171,10 @@
     init: true
     networks:
       - name: homelab
-    # --bind agrees with gateway.bind in the template on purpose. The flag binds
-    # the running process; the config value is what the CLI and plugins read, and
-    # device pairing refuses to issue a URL when it sees the loopback default.
-    # This is the command upstream's own compose file still uses at 2026.8.1.
+    # --bind agrees with gateway.bind in the seeded config on purpose. The flag
+    # binds the running process; the config value is what the CLI and plugins
+    # read, and device pairing refuses to issue a URL when it sees the loopback
+    # default. This is the command upstream's own compose file uses at 2026.8.1.
     command: ["node", "dist/index.js", "gateway", "--bind", "lan", "--port", "18789"]
     ports:
       - "18789:18789"
@@ -85,17 +201,11 @@
       # service manager the gateway would otherwise reach for — this container is
       # replaced by Renovate bumping the tag above, not by OpenClaw.
       OPENCLAW_SUPERVISOR_MODE: external
+      # Still passed to the running gateway: the seeded config holds SecretRefs
+      # naming these variables, not the secrets themselves, so they have to
+      # resolve in the gateway's own environment.
       OPENCLAW_GATEWAY_TOKEN: "{{ OPENCLAW_GATEWAY_TOKEN }}"
       OPENROUTER_API_KEY: "{{ OPENROUTER_API_KEY }}"
-
-# The gateway reads its config at startup and a running container will not pick
-# up a rewritten file on its own. #169 masked this: that config fix landed while
-# the container was crash-looping, so the restart policy reloaded it for free.
-# A healthy container has to be told.
-- name: OPENCLAW - Restart to apply config changes
-  ansible.builtin.command: docker restart openclaw
-  when: openclaw_config.changed
-  changed_when: true
 
 - name: OPENCLAW - Define service entry
   ansible.builtin.set_fact:
