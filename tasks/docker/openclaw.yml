@@ -18,10 +18,16 @@
     - "{{ base_dir }}/openclaw/state"
     - "{{ base_dir }}/openclaw/auth"
 
+# 2.0 validates this file strictly: an unknown key, a wrong type or a bad value
+# makes the gateway refuse to start rather than ignore it. Every key below is in
+# the 2.0 schema.
+#
 # gateway.mode is boot-critical — the gateway refuses to start without it and
-# will not guess. allowedOrigins has to match how the container is published,
-# or the Control UI is rejected. Both live in the template, which is applied
-# every run like every other templated container here.
+# will not guess. allowedOrigins has to match how the container is published, or
+# the Control UI is rejected. publicOrigin is what 2.0 stamps into deep links
+# back into the Control UI, so it has to be the Traefik hostname rather than the
+# container's own address. All three live in the template, which is applied every
+# run like every other templated container here.
 - name: OPENCLAW - Create configuration
   ansible.builtin.template:
     src: ../config/openclaw/openclaw.json.j2
@@ -37,12 +43,12 @@
     source: pull
     force_source: true
   vars:
-    image: ghcr.io/openclaw/openclaw:2026.7.1-2
+    image: ghcr.io/openclaw/openclaw:2026.8.1
 
 - name: OPENCLAW - Create container
   community.docker.docker_container:
     name: openclaw
-    image: ghcr.io/openclaw/openclaw:2026.7.1-2
+    image: ghcr.io/openclaw/openclaw:2026.8.1
     restart_policy: always
     state: started
     pull: false
@@ -52,6 +58,7 @@
     # --bind agrees with gateway.bind in the template on purpose. The flag binds
     # the running process; the config value is what the CLI and plugins read, and
     # device pairing refuses to issue a URL when it sees the loopback default.
+    # This is the command upstream's own compose file still uses at 2026.8.1.
     command: ["node", "dist/index.js", "gateway", "--bind", "lan", "--port", "18789"]
     ports:
       - "18789:18789"
@@ -73,6 +80,11 @@
       OPENCLAW_CONFIG_DIR: /home/node/.openclaw
       OPENCLAW_CONFIG_PATH: /home/node/.openclaw/openclaw.json
       OPENCLAW_WORKSPACE_DIR: /home/node/.openclaw/workspace
+      # 2.0 lets an external supervisor own the lifecycle. Docker's restart
+      # policy is that supervisor, so refuse the self-update path and the native
+      # service manager the gateway would otherwise reach for — this container is
+      # replaced by Renovate bumping the tag above, not by OpenClaw.
+      OPENCLAW_SUPERVISOR_MODE: external
       OPENCLAW_GATEWAY_TOKEN: "{{ OPENCLAW_GATEWAY_TOKEN }}"
       OPENROUTER_API_KEY: "{{ OPENROUTER_API_KEY }}"
 
@@ -97,6 +109,9 @@
       scheme: http
       secured: true
       healthcheck: true
+      # 2.0 splits the probes: /healthz is liveness, /startupz is traffic
+      # admission, /readyz is the deep channel-aware one. Gatus is monitoring
+      # rather than an orchestrator probe, so it stays on the strict endpoint.
       healthcheck_path: /readyz
       homepage: true
       proxied: true
