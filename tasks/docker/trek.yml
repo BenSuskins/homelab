@@ -17,12 +17,12 @@
     source: pull
     force_source: true
   vars:
-    image: mauriceboe/trek:3.4.1
+    image: mauriceboe/trek:4.2.0
 
 - name: TREK - Create container
   community.docker.docker_container:
     name: trek
-    image: mauriceboe/trek:3.4.1
+    image: mauriceboe/trek:4.2.0
     restart_policy: always
     state: started
     pull: false
