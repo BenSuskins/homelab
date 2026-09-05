@@ -48,12 +48,12 @@
     source: pull
     force_source: true
   vars:
-    image: ghcr.io/gethomepage/homepage:v2.1.2
+    image: ghcr.io/gethomepage/homepage:v2.2.0
 
 - name: HOMEPAGE - Create container
   community.docker.docker_container:
     name: homepage
-    image: ghcr.io/gethomepage/homepage:v2.1.2
+    image: ghcr.io/gethomepage/homepage:v2.2.0
     restart_policy: always
     state: started
     pull: false
