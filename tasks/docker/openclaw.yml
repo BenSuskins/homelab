@@ -25,7 +25,7 @@
     force_source: true
   register: openclaw_image
   vars:
-    image: ghcr.io/openclaw/openclaw:2026.8.1
+    image: ghcr.io/openclaw/openclaw:2026.9.2
 
 - name: OPENCLAW - Check whether the gateway has been onboarded
   ansible.builtin.stat:
@@ -174,7 +174,7 @@
 - name: OPENCLAW - Create container
   community.docker.docker_container:
     name: openclaw
-    image: ghcr.io/openclaw/openclaw:2026.8.1
+    image: ghcr.io/openclaw/openclaw:2026.9.2
     restart_policy: always
     state: started
     pull: false
