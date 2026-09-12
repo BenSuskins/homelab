@@ -176,14 +176,14 @@ static_services:
     secured: false
     proxied: true
 
-  - name: minecraft
-    description: Minecraft server
-    host: "minecraft.{{ domain }}"
-    ip: 192.168.0.125
-    friendly_name: Games
-    port: 25566
-    scheme: http
-    healthcheck: true
-    secured: true
-    homepage: true
-    proxied: true
+#  - name: minecraft
+#    description: Minecraft server
+#    host: "minecraft.{{ domain }}"
+#    ip: 192.168.0.125
+#    friendly_name: Games
+#    port: 25566
+#    scheme: http
+#    healthcheck: true
+#    secured: true
+#    homepage: true
+#    proxied: true
