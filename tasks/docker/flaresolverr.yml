@@ -5,12 +5,12 @@
     source: pull
     force_source: true
   vars:
-    image: ghcr.io/flaresolverr/flaresolverr:v3.5.0
+    image: ghcr.io/flaresolverr/flaresolverr:v3.5.2
 
 - name: FLARESOLVERR - Create container
   community.docker.docker_container:
     name: flaresolverr
-    image: ghcr.io/flaresolverr/flaresolverr:v3.5.0
+    image: ghcr.io/flaresolverr/flaresolverr:v3.5.2
     restart_policy: always
     state: started
     pull: false
