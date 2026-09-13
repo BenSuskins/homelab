@@ -35,3 +35,24 @@ until something breaks; and a local-only checkout with no remote, which loses
 history and a second machine. Neither addressed the concurrency and locking gaps,
 which were latent in the repository before this app existed and were only found
 because dispatching became a one-click operation.
+
+## Amendment: the apps, plural
+
+`docs/ios-app-scope.md` adds two more Swift directories under `apps/` — a shared
+`homelab-core/` package and an iOS `homelab-ios/` app. The reasoning above holds
+unchanged and applies to all three: they are control surfaces for this
+repository's CI/CD, and the iOS app's copy of `DispatchableWorkflow` is the same
+list of files in `.github/workflows/`.
+
+The `paths-ignore: ['apps/**']` blocks are unchanged in kind and wider in blast
+radius. The glob already covers the new directories, so nothing needs editing —
+but there are now three ways to write a Swift-only commit that would deploy to
+six hosts if either block were removed, and the trap has become correspondingly
+easier to spring.
+
+The scope adds the missing half of that pair: `.github/workflows/apps.yml`,
+triggered on `paths: ['apps/**']`, which builds and tests the Swift. Nothing in
+CI touches it today. Two apps sharing a package is where an untested core stops
+being tolerable, because a break in `homelab-core/` now breaks something you are
+not looking at. Note that it cannot run on the `self-hosted` runner, which is
+Linux — it needs a GitHub-hosted macOS runner.

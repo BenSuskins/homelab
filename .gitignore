@@ -64,6 +64,7 @@ Temporary Items
 
 .ansible/
 .idea/
+plans/
 
 # Terraform
 terraform/**/.terraform/
@@ -73,9 +74,16 @@ terraform/**/*.tfvars
 terraform/**/crash.log
 terraform/**/tfplan
 
-# Swift / SwiftPM (apps/homelab-menubar)
+# Swift / SwiftPM (apps/)
 apps/**/.build/
 apps/**/.swiftpm/
 apps/**/Package.resolved
+
+# apps/homelab-ios/Homelab.xcodeproj IS committed. Xcode Cloud discovers the
+# project by scanning the repository, so a generated one it cannot see at setup
+# time is no use. Per-user state inside it still stays out.
+apps/**/xcuserdata/
+apps/**/*.xcscmblueprint
+apps/**/*.xcresult
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,visualstudiocode,ansible,ssh

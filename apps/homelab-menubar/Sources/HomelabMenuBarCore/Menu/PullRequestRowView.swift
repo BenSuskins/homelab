@@ -1,3 +1,4 @@
+import HomelabCore
 import SwiftUI
 
 struct PullRequestRowView: View {

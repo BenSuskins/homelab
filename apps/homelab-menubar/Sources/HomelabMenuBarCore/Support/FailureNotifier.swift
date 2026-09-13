@@ -1,13 +1,15 @@
 import Foundation
+import HomelabCore
 import UserNotifications
-
-public protocol FailureNotifying: Sendable {
-    func requestAuthorization() async
-    func notify(_ row: RunRow) async
-}
 
 /// Success is the expected case and the glyph already reports it, so silence
 /// carries meaning: a notification only ever means something broke.
+///
+/// macOS only, and deliberately not moved to `HomelabCore` even though
+/// `UserNotifications` exists on iOS too. A backgrounded iOS app is suspended
+/// within seconds, so its polling loop stops and `FailureDetector` never sees
+/// the failure — keeping the type out of the shared package means the iOS app
+/// cannot wire up a notifier that would never fire. See ADR-0005.
 public struct FailureNotifier: FailureNotifying {
     public init() {}
 

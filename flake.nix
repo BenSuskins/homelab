@@ -1,5 +1,5 @@
 {
-  description = "Ansible development environment";
+  description = "Homelab development environment: Ansible, and the apps in apps/";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
@@ -16,7 +16,7 @@
         python3Packages.pip  
       ];
       shellHook = ''
-        echo "Ansible dev shell ready!"
+        echo "Ansible dev shell ready! (the apps in apps/ need Xcode, not this)"
       '';
     };
   };

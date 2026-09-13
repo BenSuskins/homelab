@@ -19,30 +19,39 @@ requests, and jump to Homepage / Actions / the repo.
 └──────────────────────────────┘
 ```
 
+The platform-neutral half of this app now lives in
+[`../homelab-core`](../homelab-core), shared with
+[`../homelab-ios`](../homelab-ios). What is left here is the macOS half: the menu
+views, the settings window, the login item, and `gh`.
+
 ## Requirements
 
-The [GitHub CLI](https://cli.github.com), authenticated:
+Nothing to install. Open the menu and **Sign in with GitHub** — a device-flow
+code you type into github.com once, after which the token lives in your
+Keychain. **Settings → GitHub** signs out; GitHub → Settings → Applications
+revokes.
 
-```bash
-gh auth status   # needs the `repo` scope
-```
+It used to require the [GitHub CLI](https://cli.github.com) and shell out to it,
+which meant hunting `PATH`, Nix, Homebrew and `/usr/local` by hand because a GUI
+app launched from Finder inherits none of your shell's environment. That went
+when ADR-0004 was amended and both apps moved onto one token.
 
-The app holds no token of its own — every call shells out to `gh`, so
-`gh auth login` is the only credential management there is. It searches `PATH`
-and then Nix, Homebrew and `/usr/local` explicitly, because a GUI app launched
-from Finder does not inherit your shell's `PATH`.
+**One rough edge:** `make bundle` ad-hoc signs, so every build has a different
+signature and macOS may treat it as a different app for Keychain purposes —
+expect to sign in again after a rebuild. A real signing identity fixes it, and
+`gh` never had this problem, which is the honest cost of the change.
 
 ## Build
 
 ```bash
-make test      # unit tests against a fake `gh`
+make test      # both packages: HomelabCore, then this one
 make bundle    # .build/Homelab.app
 make install   # copy to /Applications
 make run       # build and launch without installing
 ```
 
-`swift test` alone is the fast red/green loop. The contract tests are excluded
-from it by name:
+`make test-core` alone is the fast red/green loop, since that is where the logic
+is. The contract tests here are excluded by name:
 
 ```bash
 swift test --skip Contract    # fakes only, no network
@@ -71,27 +80,27 @@ Data flows one way, and every layer above the process boundary is a pure
 function of the layer below:
 
 ```
-GitHubCommandLineRunner   ← the only impure thing on this path; spawns `gh`
+URLSessionTransport       ← the only impure thing on this path
       ↓ Data
 GitHubClient              ← decodes, maps onto domain types
       ↓ WorkflowRunSummary / PullRequestSummary
 AppState                  ← @Observable, owns the polling loop
-      ↓ MenuSnapshot      ← immutable; also what gets cached to disk
+      ↓ StatusSnapshot    ← immutable; also what gets cached to disk
 MenuView
 ```
 
-`MenuSnapshot` is the seam. It answers every question the view can ask — what
-colour a row is, whether its button is enabled, what the subtitle says — so the
-view holds no logic and the logic needs no view to test.
+All of that is in `HomelabCore`, shared with iOS. `StatusSnapshot` is the seam. It answers every question the view can ask — what colour a row is,
+whether its button is enabled, what the subtitle says — so the view holds no
+logic and the logic needs no view to test.
 
 `LoginItemControlling` is the other process boundary — `SMAppService` behind a
 protocol, faked the same way, so the reconcile-at-launch logic is tested without
 touching your real login items.
 
-Tests fake `CommandRunner`, the process boundary, which means decoding, mapping
-and snapshot construction all run for real. A handful of read-only contract
-tests run the actual `gh` to catch the one thing a fake cannot: `gh` changing
-its output.
+Tests fake `GitHubTransport` in the core package, so decoding, mapping and
+snapshot construction all run for real. A handful of read-only contract tests
+hit the real API to catch the one thing a fake cannot — GitHub changing its
+output. They use the token you signed in with, and skip when there isn't one.
 
 ### Deliberate choices
 
@@ -115,3 +124,7 @@ its output.
   no visible reason. The attempt decides, and a refusal says what macOS said.
 - **Squash merge, always.** One commit on `main` per PR is one Update Homelab
   run is one line in the deploy log. Merging here deploys.
+- **This app holds a token now.** It used to hold none, which was its best
+  property. Unifying on one auth path with iOS cost that and bought a single
+  sign-in flow, no `gh` dependency, and no `PATH` archaeology. See ADR-0004 and
+  its amendment.

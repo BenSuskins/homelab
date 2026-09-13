@@ -1,0 +1,541 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		2F61DFE5A67347DA4F00080F /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A05C5B72EFC5C657A0A935D1 /* SignInView.swift */; };
+		461DC5BDCA4D92CA7131E673 /* RunsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAE6AE406685F95AE12D0E1A /* RunsView.swift */; };
+		54F9BED11CD44E9EAC48334F /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A54BA803DDC07167998D5FB7 /* RootView.swift */; };
+		57FC1BBA724745A745B01F1C /* HomelabApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19EC8964D626BCD3CC42EAEB /* HomelabApp.swift */; };
+		65D93D4F8615D02448F82353 /* BiometricWriteAuthorisation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 731958831B9B633EB7054215 /* BiometricWriteAuthorisation.swift */; };
+		726D460A6A0F19DC28F113AC /* HealthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7177A30531B54ABAF648B74F /* HealthView.swift */; };
+		7DF7462030EF407F093DD8A9 /* HomelabWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08651508EB54B059E554563C /* HomelabWidget.swift */; };
+		A4C6E9B1F73142C6B0012A51 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A4C6E9B0F73142C6B0012A51 /* Assets.xcassets */; };
+		916AD62C84ADB22FFBB8EEA2 /* HomelabWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7CFB96D029BCCA6191D25A4C /* HomelabWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		D2697C8422D16608BEB4C3EA /* HomelabCore in Frameworks */ = {isa = PBXBuildFile; productRef = BF9F2C480EDC92B38EA01F0C /* HomelabCore */; };
+		F5A70C89719CED83AAD5EC8F /* HomelabCore in Frameworks */ = {isa = PBXBuildFile; productRef = A99FA89E97B1CA43B6B380A3 /* HomelabCore */; };
+		FB5443B7248604C6A9F388B4 /* PullRequestsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF443BA5FAAB8C677D6234F6 /* PullRequestsView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A2B119217C9982A83CDBE45A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = DE28C1443C90FD5E0567C4BE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DB04D1E0B0F68207C821D26D;
+			remoteInfo = HomelabWidget;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		56E162842BE1EC46F5104CBE /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				916AD62C84ADB22FFBB8EEA2 /* HomelabWidget.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		08651508EB54B059E554563C /* HomelabWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomelabWidget.swift; sourceTree = "<group>"; };
+		0EA05B531B5F95F3CEE5D217 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		19EC8964D626BCD3CC42EAEB /* HomelabApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomelabApp.swift; sourceTree = "<group>"; };
+		32ED3A9AC7D6378332669C7D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		542F10223BDBCDEB406B4DE7 /* HomelabApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HomelabApp.entitlements; sourceTree = "<group>"; };
+		594FFBC4847918D24EEBAB60 /* Homelab.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Homelab.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7177A30531B54ABAF648B74F /* HealthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthView.swift; sourceTree = "<group>"; };
+		731958831B9B633EB7054215 /* BiometricWriteAuthorisation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricWriteAuthorisation.swift; sourceTree = "<group>"; };
+		7CFB96D029BCCA6191D25A4C /* HomelabWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HomelabWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		A05C5B72EFC5C657A0A935D1 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
+		A4C6E9B0F73142C6B0012A51 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A54BA803DDC07167998D5FB7 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		B311B40B03C7E98009525D02 /* HomelabWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HomelabWidget.entitlements; sourceTree = "<group>"; };
+		CAE6AE406685F95AE12D0E1A /* RunsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunsView.swift; sourceTree = "<group>"; };
+		E34738F61AA891FEB73B68F9 /* homelab-core */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "homelab-core"; path = "../homelab-core"; sourceTree = SOURCE_ROOT; };
+		EF443BA5FAAB8C677D6234F6 /* PullRequestsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PullRequestsView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		52FD7E5AA30FE97FA5789A13 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F5A70C89719CED83AAD5EC8F /* HomelabCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C31FD62B1FB86B6E4C26416D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D2697C8422D16608BEB4C3EA /* HomelabCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A4C6E9B2F73142C6B0012A51 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A4C6E9B1F73142C6B0012A51 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXGroup section */
+		18631C0DF24BF93A50B06CF6 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				E34738F61AA891FEB73B68F9 /* homelab-core */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		5A9E1D3A67703C812006DFAC = {
+			isa = PBXGroup;
+			children = (
+				18631C0DF24BF93A50B06CF6 /* Packages */,
+				7A83506330B447F6B763C293 /* Sources */,
+				E163496F466E06D0E015E1FD /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		7A83506330B447F6B763C293 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				B0B298AB3831B81200E946D1 /* HomelabApp */,
+				A1FA3F3F141E4F5054BFF476 /* HomelabWidget */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		A1FA3F3F141E4F5054BFF476 /* HomelabWidget */ = {
+			isa = PBXGroup;
+			children = (
+				B311B40B03C7E98009525D02 /* HomelabWidget.entitlements */,
+				08651508EB54B059E554563C /* HomelabWidget.swift */,
+				32ED3A9AC7D6378332669C7D /* Info.plist */,
+			);
+			path = HomelabWidget;
+			sourceTree = "<group>";
+		};
+		B0B298AB3831B81200E946D1 /* HomelabApp */ = {
+			isa = PBXGroup;
+			children = (
+				A4C6E9B0F73142C6B0012A51 /* Assets.xcassets */,
+				731958831B9B633EB7054215 /* BiometricWriteAuthorisation.swift */,
+				7177A30531B54ABAF648B74F /* HealthView.swift */,
+				542F10223BDBCDEB406B4DE7 /* HomelabApp.entitlements */,
+				19EC8964D626BCD3CC42EAEB /* HomelabApp.swift */,
+				0EA05B531B5F95F3CEE5D217 /* Info.plist */,
+				EF443BA5FAAB8C677D6234F6 /* PullRequestsView.swift */,
+				A54BA803DDC07167998D5FB7 /* RootView.swift */,
+				CAE6AE406685F95AE12D0E1A /* RunsView.swift */,
+				A05C5B72EFC5C657A0A935D1 /* SignInView.swift */,
+			);
+			path = HomelabApp;
+			sourceTree = "<group>";
+		};
+		E163496F466E06D0E015E1FD /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				594FFBC4847918D24EEBAB60 /* Homelab.app */,
+				7CFB96D029BCCA6191D25A4C /* HomelabWidget.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		223F538C4D6F51BA4133921F /* HomelabApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DFD95495F14B6C1268E019F9 /* Build configuration list for PBXNativeTarget "HomelabApp" */;
+			buildPhases = (
+				321A4F3F63F3B06F667AEB0E /* Sources */,
+				A4C6E9B2F73142C6B0012A51 /* Resources */,
+				C31FD62B1FB86B6E4C26416D /* Frameworks */,
+				56E162842BE1EC46F5104CBE /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				5EC9DFF6528789676D42C1EA /* PBXTargetDependency */,
+			);
+			name = HomelabApp;
+			packageProductDependencies = (
+				BF9F2C480EDC92B38EA01F0C /* HomelabCore */,
+			);
+			productName = HomelabApp;
+			productReference = 594FFBC4847918D24EEBAB60 /* Homelab.app */;
+			productType = "com.apple.product-type.application";
+		};
+		DB04D1E0B0F68207C821D26D /* HomelabWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D714076C7F13F8D81B6061BA /* Build configuration list for PBXNativeTarget "HomelabWidget" */;
+			buildPhases = (
+				FC9A5A0213D4951B99564CF9 /* Sources */,
+				52FD7E5AA30FE97FA5789A13 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HomelabWidget;
+			packageProductDependencies = (
+				A99FA89E97B1CA43B6B380A3 /* HomelabCore */,
+			);
+			productName = HomelabWidget;
+			productReference = 7CFB96D029BCCA6191D25A4C /* HomelabWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		DE28C1443C90FD5E0567C4BE /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					DB04D1E0B0F68207C821D26D = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 53B06AFB20AFF82B11048BA4 /* Build configuration list for PBXProject "Homelab" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 5A9E1D3A67703C812006DFAC;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				89F0096C5169EF779853C04F /* XCLocalSwiftPackageReference "../homelab-core" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = E163496F466E06D0E015E1FD /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				223F538C4D6F51BA4133921F /* HomelabApp */,
+				DB04D1E0B0F68207C821D26D /* HomelabWidget */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		321A4F3F63F3B06F667AEB0E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				65D93D4F8615D02448F82353 /* BiometricWriteAuthorisation.swift in Sources */,
+				726D460A6A0F19DC28F113AC /* HealthView.swift in Sources */,
+				57FC1BBA724745A745B01F1C /* HomelabApp.swift in Sources */,
+				FB5443B7248604C6A9F388B4 /* PullRequestsView.swift in Sources */,
+				54F9BED11CD44E9EAC48334F /* RootView.swift in Sources */,
+				461DC5BDCA4D92CA7131E673 /* RunsView.swift in Sources */,
+				2F61DFE5A67347DA4F00080F /* SignInView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FC9A5A0213D4951B99564CF9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7DF7462030EF407F093DD8A9 /* HomelabWidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		5EC9DFF6528789676D42C1EA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DB04D1E0B0F68207C821D26D /* HomelabWidget */;
+			targetProxy = A2B119217C9982A83CDBE45A /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		3C8BD7E5D45849BB36E6C2DE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				CODE_SIGN_ENTITLEMENTS = Sources/HomelabApp/HomelabApp.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = PF88YZ2HU7;
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = Sources/HomelabApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = co.uk.suskins.Homelab;
+				PRODUCT_NAME = Homelab;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		700BFD62B662742F50A8B66A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		83F0F0836E3C4EEA0AFFE11C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		AA49A0E2A12E467E46E4FF99 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				CODE_SIGN_ENTITLEMENTS = Sources/HomelabApp/HomelabApp.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = PF88YZ2HU7;
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = Sources/HomelabApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = co.uk.suskins.Homelab;
+				PRODUCT_NAME = Homelab;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		F1FC138F7C0839E0F1300CD5 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Sources/HomelabWidget/HomelabWidget.entitlements;
+				DEVELOPMENT_TEAM = PF88YZ2HU7;
+				CURRENT_PROJECT_VERSION = 2;
+				INFOPLIST_FILE = Sources/HomelabWidget/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = co.uk.suskins.Homelab.Widget;
+				PRODUCT_NAME = HomelabWidget;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		F78F615252A9D70D19470D5C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Sources/HomelabWidget/HomelabWidget.entitlements;
+				DEVELOPMENT_TEAM = PF88YZ2HU7;
+				CURRENT_PROJECT_VERSION = 2;
+				INFOPLIST_FILE = Sources/HomelabWidget/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = co.uk.suskins.Homelab.Widget;
+				PRODUCT_NAME = HomelabWidget;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		53B06AFB20AFF82B11048BA4 /* Build configuration list for PBXProject "Homelab" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				83F0F0836E3C4EEA0AFFE11C /* Debug */,
+				700BFD62B662742F50A8B66A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		D714076C7F13F8D81B6061BA /* Build configuration list for PBXNativeTarget "HomelabWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F78F615252A9D70D19470D5C /* Debug */,
+				F1FC138F7C0839E0F1300CD5 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		DFD95495F14B6C1268E019F9 /* Build configuration list for PBXNativeTarget "HomelabApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3C8BD7E5D45849BB36E6C2DE /* Debug */,
+				AA49A0E2A12E467E46E4FF99 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		89F0096C5169EF779853C04F /* XCLocalSwiftPackageReference "../homelab-core" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "../homelab-core";
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A99FA89E97B1CA43B6B380A3 /* HomelabCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = HomelabCore;
+		};
+		BF9F2C480EDC92B38EA01F0C /* HomelabCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = HomelabCore;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = DE28C1443C90FD5E0567C4BE /* Project object */;
+}

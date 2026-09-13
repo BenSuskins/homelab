@@ -83,7 +83,7 @@ _Avoid_: Terraform module, stack
 The Tailscale node running on the `docker` host that advertises the home LAN CIDR (`192.168.0.0/24`) to the tailnet, so any tailnet device can reach homelab services without inbound port forwarding.
 _Avoid_: VPN gateway, relay
 
-### Menu Bar App
+### Apps
 
 **Dispatchable Workflow**:
 One of the three workflows the menu bar app is allowed to start on demand — `update.yml`, `terraform.yml`, `clean.yml`. The repository holds other workflows (`build-mcp-arr.yml`); a workflow is Dispatchable only if starting it by hand is a thing you'd deliberately do. Distinct from merely carrying a `workflow_dispatch` trigger.
@@ -101,6 +101,26 @@ _Avoid_: icon state, badge
 A run that has reached an environment gate with required reviewers and stopped. Terraform does this on every run, between plan and apply. It is not running (nothing is executing) and not finished (no conclusion), but it still owns the workflow, so triggering another would race it.
 _Avoid_: pending, blocked, waiting (ambiguous with queued)
 
-**Menu Snapshot**:
-The immutable value describing everything the menu renders at one moment. Produced from fetched data, consumed by the view, and cached to disk verbatim so the menu paints instantly at launch. Every question the view can ask is answered on the Snapshot, so the view holds no logic.
-_Avoid_: view model, menu state
+**Status Snapshot**:
+The immutable value describing everything a surface renders at one moment — the macOS menu, the iOS Runs tab, the widget. Produced from fetched data, consumed by the view, and cached to disk verbatim so each paints instantly at launch. Every question the view can ask is answered on the Snapshot, so the view holds no logic. Called `MenuSnapshot` until there was more than a menu.
+_Avoid_: view model, menu state, Menu Snapshot
+
+**Transport**:
+The single impure step between `GitHubClient` and GitHub, behind the `GitHubTransport` protocol. The client builds a `GitHubRequest` — a method, a path and fields, or a GraphQL query — and does not know what will carry it. `URLSessionTransport` is the only production implementation; a `GhCommandTransport` that shelled out to `gh` existed on macOS until ADR-0004 was amended, and the seam it forced is what made the iOS app cheap to add.
+_Avoid_: client, backend, API layer
+
+**Token Store**:
+Where an app keeps its GitHub credential, behind the `TokenStoring` protocol so the Keychain is faked in tests like every other boundary. Both apps have one, under different Keychain services so signing out of the phone does not sign out the Mac.
+_Avoid_: credential manager, keychain wrapper
+
+**Session**:
+The shared object that owns "are we signed in": it runs the device flow, holds the Token Store, and builds `AppState` only once there is a token — so no view below the root has to cope with a client that cannot authenticate. One per app, and the same type in both since ADR-0004's amendment.
+_Avoid_: auth manager, login state
+
+**Health Grid**:
+The iOS health screen's per-service up/down display, built from `gatus_results_endpoint_success` read straight from Prometheus over the tailnet and grouped by Host Label. Distinct from Gatus's own web UI, which it deliberately does not proxy or embed.
+_Avoid_: status page, uptime screen
+
+**Write**:
+Any of the three operations that change something on GitHub — dispatch, cancel, squash merge. Named as a category because they share one rule: on iOS every Write is behind a biometric prompt and no read ever is.
+_Avoid_: action, mutation, command

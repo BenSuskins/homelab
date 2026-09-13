@@ -1,0 +1,82 @@
+name: Apps
+
+# The mirror image of the `paths-ignore: ['apps/**']` blocks on `update.yml`
+# and `build-mcp-arr.yml` (see ADR-0003). Those stop Swift commits deploying
+# Ansible to six hosts; this is the half that actually checks the Swift.
+#
+# It cannot run on the `self-hosted` runner, which is Linux.
+on:
+  push:
+    branches: [main]
+    paths: ['apps/**', '.github/workflows/apps.yml']
+  pull_request:
+    paths: ['apps/**', '.github/workflows/apps.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apps-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Select Xcode
+        run: sudo xcode-select -switch /Applications/Xcode_16.app
+
+      # The shared package holds every testable decision in both apps, so this
+      # is the job that matters.
+      - name: Test HomelabCore
+        working-directory: apps/homelab-core
+        run: swift test
+
+      # Contract tests are excluded by name: they hit the live API with the
+      # token you signed in with, which CI has no way to hold.
+      - name: Test the menu bar app
+        working-directory: apps/homelab-menubar
+        run: swift test --skip Contract
+
+      - name: Build the menu bar app
+        working-directory: apps/homelab-menubar
+        run: swift build -c release --product HomelabMenuBar
+
+  ios:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Select Xcode
+        run: sudo xcode-select -switch /Applications/Xcode_16.app
+
+      # No test step: the iOS target is views and wiring over HomelabCore,
+      # which the job above covers. A clean compile is what there is to prove.
+      #
+      # `generic/platform=iOS Simulator` rather than a named device: this only
+      # ever compiles, and naming one ties the job to whichever simulators the
+      # runner image happens to ship — which is how the first run of this
+      # workflow failed, on a missing "iPhone 16", before building anything.
+      - name: Build for the simulator
+        working-directory: apps/homelab-ios
+        run: |
+          xcodebuild build \
+            -project Homelab.xcodeproj \
+            -scheme Homelab \
+            -destination 'generic/platform=iOS Simulator' \
+            -resultBundlePath build.xcresult \
+            CODE_SIGNING_ALLOWED=NO
+
+      # xcodebuild batches Swift compiles, and when one fails it can report
+      # nothing but "Command SwiftCompile failed with a nonzero exit code" —
+      # the diagnostics stay in the result bundle. Without this a red build
+      # says only that something broke, not what, which cost several rounds.
+      - name: Show build diagnostics
+        if: failure()
+        working-directory: apps/homelab-ios
+        run: |
+          xcrun xcresulttool get build-results \
+            --path build.xcresult --format json | head -c 20000

@@ -178,13 +178,23 @@ Host identification is governed by `docs/adr/0001-host-label-canonical-for-dashb
 
 Renovate monitors `tasks/docker/*.yml` for Docker image versions and creates PRs for updates. Images are pinned to specific versions (not `latest`).
 
-### Menu Bar App (`apps/homelab-menubar/`)
+### Apps (`apps/`)
 
-A native macOS SwiftUI menu bar app that shows the state of the three dispatchable workflows, triggers/cancels them, lists and squash-merges open PRs, and links to Homepage. It is a Swift package — `make test`, `make bundle`, `make install`; see `apps/homelab-menubar/README.md`.
+Three Swift packages:
 
-It authenticates by shelling out to `gh`, so it holds no token. All GitHub access goes through the `CommandRunner` protocol, which is the only seam tests fake.
+- **`apps/homelab-core/`** — `HomelabCore`, shared by both apps: domain types, `GitHubClient`, `StatusSnapshot`, `AppState`, the polling schedule, and the Prometheus client. Every testable decision lives here. Nothing in it imports AppKit, `ServiceManagement` or `Process`.
+- **`apps/homelab-menubar/`** — the macOS menu bar app: menu views, settings window, login item.
+- **`apps/homelab-ios/`** — the iOS app and its widget. `Homelab.xcodeproj` is committed and is the source of truth: Xcode Cloud (which deploys to TestFlight) discovers the project by scanning the repository, so a generated one is no use to it. Edit targets in Xcode, not in a spec file.
 
-**`update.yml` and `build-mcp-arr.yml` carry `paths-ignore: ['apps/**']`.** Both trigger on every push to `main`; without those blocks a commit touching only Swift code runs Ansible against all six hosts. Do not remove them. See `docs/adr/0003-menu-bar-app-lives-in-this-repo.md`.
+From `apps/homelab-menubar/`: `make test` (both packages), `make bundle`, `make install`, `make ios-generate`, `make ios-build`.
+
+All GitHub access goes through the `GitHubTransport` protocol, which is the only seam tests fake. Both apps authenticate with a GitHub OAuth device-flow token from the Keychain and share one `Session`; iOS additionally gates every write behind biometrics — `docs/adr/0004-the-ios-app-holds-a-token.md`, including the amendment that removed `gh`. iOS wires up no notifier at all, because a suspended app never sees the failure — `docs/adr/0005-ios-ambient-status-is-a-widget.md`.
+
+`openPullRequests()` uses GraphQL, not REST, and must stay that way: REST's `/pulls` list endpoint does not return `mergeable` at all, so a "simplification" to REST silently breaks `canMerge`.
+
+**`update.yml` and `build-mcp-arr.yml` carry `paths-ignore: ['apps/**']`.** Both trigger on every push to `main`; without those blocks a commit touching only Swift code runs Ansible against all six hosts. Do not remove them. `apps.yml` is the other half of that pair — it runs on `paths: ['apps/**']` and is the only workflow that builds or tests the Swift. It needs a GitHub-hosted macOS runner; the `self-hosted` one is Linux. See `docs/adr/0003-menu-bar-app-lives-in-this-repo.md`.
+
+`docs/ios-app-scope.md` is the plan the apps were built to, including the roadmap past v1 (service directory, log viewer, metrics, SSH).
 
 ## Agent skills
 
