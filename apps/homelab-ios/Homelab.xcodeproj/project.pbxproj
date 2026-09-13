@@ -195,9 +195,6 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
-					223F538C4D6F51BA4133921F = {
-						ProvisioningStyle = Automatic;
-					};
 					DB04D1E0B0F68207C821D26D = {
 						ProvisioningStyle = Automatic;
 					};
@@ -265,7 +262,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Sources/HomelabApp/HomelabApp.entitlements;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = PF88YZ2HU7;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = Sources/HomelabApp/Info.plist;
@@ -275,6 +273,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = co.uk.suskins.Homelab;
 				PRODUCT_NAME = Homelab;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -414,7 +413,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Sources/HomelabApp/HomelabApp.entitlements;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = PF88YZ2HU7;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = Sources/HomelabApp/Info.plist;
@@ -424,6 +424,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = co.uk.suskins.Homelab;
 				PRODUCT_NAME = Homelab;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
