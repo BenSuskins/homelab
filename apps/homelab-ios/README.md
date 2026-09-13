@@ -32,11 +32,15 @@ and a home-screen widget.
 
 ```bash
 cd ../homelab-menubar
-make ios-generate    # xcodegen → Homelab.xcodeproj (never committed)
 make ios-build       # xcodebuild against the simulator SDK (compile only)
 ```
 
-Then open `Homelab.xcodeproj`, set your team on both targets, and run.
+Or just open `Homelab.xcodeproj`, set your team on both targets, and run.
+
+The project file is **committed and is the source of truth** — change targets in
+Xcode, not in a spec. It was XcodeGen-generated and gitignored to begin with,
+until Xcode Cloud turned out to need a project it can find by scanning the
+repository. `make ios-bootstrap-project` exists only to seed it once.
 
 There is no `make ios-test`. Every testable decision lives in `HomelabCore` and
 is covered by `make test-core`; this target is views and wiring, so a clean

@@ -53,9 +53,6 @@ jobs:
       - name: Select Xcode
         run: sudo xcode-select -switch /Applications/Xcode_16.app
 
-      - name: Install XcodeGen
-        run: brew install xcodegen
-
       # No test step: the iOS target is views and wiring over HomelabCore,
       # which the job above covers. A clean compile is what there is to prove.
       #
@@ -66,7 +63,6 @@ jobs:
       - name: Build for the simulator
         working-directory: apps/homelab-ios
         run: |
-          xcodegen generate
           xcodebuild build \
             -project Homelab.xcodeproj \
             -scheme Homelab \

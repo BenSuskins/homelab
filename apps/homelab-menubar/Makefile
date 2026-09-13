@@ -7,7 +7,7 @@ CORE_DIR    := ../homelab-core
 IOS_DIR     := ../homelab-ios
 
 .PHONY: all test test-core test-menubar build bundle install clean run \
-        ios-generate ios-build
+        ios-build ios-bootstrap-project
 
 all: bundle
 
@@ -44,23 +44,37 @@ install: bundle
 run: bundle
 	open "$(STAGE_DIR)"
 
-# The iOS app is an Xcode project, which SwiftPM cannot produce — the spec is
-# checked in and the .xcodeproj is generated, never committed.
+# Homelab.xcodeproj is committed and is the source of truth. Xcode Cloud finds
+# the project by scanning the repository, so a generated one is no use to it —
+# change targets in Xcode, not in a spec file.
 #
 # There is no `ios-test`: every testable decision lives in HomelabCore and is
 # covered by `make test-core`. The iOS target is views and wiring, so a compile
 # is what there is to verify here.
-ios-generate:
-	cd $(IOS_DIR) && xcodegen generate
-
+#
 # A generic destination, not a named simulator: this target only compiles, and
 # naming a device ties it to whichever simulators happen to be installed.
-ios-build: ios-generate
+ios-build:
 	cd $(IOS_DIR) && xcodebuild build \
 		-project Homelab.xcodeproj -scheme Homelab \
 		-destination 'generic/platform=iOS Simulator'
 
+# One-off, to seed the committed project from project.yml. Run it once, commit
+# the result, then delete project.yml and this target.
+#
+# It refuses to run over an existing project on purpose: regenerating would
+# silently discard anything changed in Xcode, which is exactly the failure mode
+# that makes a generated-and-committed project worse than either alternative.
+ios-bootstrap-project:
+	@test ! -d $(IOS_DIR)/Homelab.xcodeproj \
+		|| { echo "Homelab.xcodeproj exists — edit it in Xcode."; exit 1; }
+	command -v xcodegen >/dev/null || brew install xcodegen
+	cd $(IOS_DIR) && xcodegen generate
+	@echo ""
+	@echo "Generated $(IOS_DIR)/Homelab.xcodeproj."
+	@echo "Commit it, then delete $(IOS_DIR)/project.yml and this target."
+
 clean:
 	swift package clean
 	swift package --package-path $(CORE_DIR) clean
-	rm -rf .build $(CORE_DIR)/.build $(IOS_DIR)/Homelab.xcodeproj
+	rm -rf .build $(CORE_DIR)/.build

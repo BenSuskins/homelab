@@ -117,11 +117,16 @@ transport supplied the text.
 
 ### Phase 2 — iOS scaffold
 
-XcodeGen, with `apps/homelab-ios/project.yml` checked in and no `.xcodeproj`:
+`apps/homelab-ios/Homelab.xcodeproj` is committed and is the source of truth:
 the app target, the widget extension, the App Group, and the local package
-dependency. Add `xcodegen` to `flake.nix`; add `ios-generate` and `ios-build` to
-the Makefile. There is no `ios-test`: every testable decision is in
-`HomelabCore`, so a clean compile is what the iOS target has to prove.
+dependency all live in it. Add `ios-build` to the Makefile.
+
+This started as XcodeGen with a gitignored project, on the reasoning that a
+`.xcodeproj` is a merge-conflict machine. That was reversed once it emerged
+that TestFlight deployment goes through **Xcode Cloud**, which discovers the
+project by scanning the repository — a generated one is not there to be found
+when you set the workflow up. `project.yml` seeded the committed project via a
+one-off `make ios-bootstrap-project` and is deleted afterwards.
 
 Add `.github/workflows/apps.yml` on `paths: ['apps/**']`, `runs-on: macos-15` —
 the mirror image of the `paths-ignore` blocks ADR-0003 describes. Nothing builds

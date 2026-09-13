@@ -14,12 +14,9 @@
         ansible-lint 
         python3  
         python3Packages.pip  
-        # apps/homelab-ios has no committed .xcodeproj; it is generated from
-        # project.yml. Swift and xcodebuild come from Xcode, not from here.
-        xcodegen
       ];
       shellHook = ''
-        echo "Homelab dev shell ready (ansible, xcodegen)."
+        echo "Ansible dev shell ready! (the apps in apps/ need Xcode, not this)"
       '';
     };
   };

@@ -1,8 +1,19 @@
-# XcodeGen spec. The `.xcodeproj` is generated, never committed — it is a
-# merge-conflict machine and it duplicates everything already stated here.
+# TEMPORARY — delete this file once Homelab.xcodeproj is committed.
 #
-#   brew install xcodegen   (or use the flake)
-#   make ios-generate
+# The project used to be generated from this spec and gitignored. It is now
+# committed and is the source of truth, because Xcode Cloud (which deploys to
+# TestFlight) discovers the project by scanning the repository and a generated
+# one is not there to be found at setup time.
+#
+# This spec survives only to seed that first project:
+#
+#   cd apps/homelab-menubar && make ios-bootstrap-project
+#   git add -A apps/homelab-ios && git commit
+#   git rm apps/homelab-ios/project.yml     # and drop the Makefile target
+#
+# Do not re-run the generator afterwards: it would discard anything changed in
+# Xcode. The bootstrap target refuses to run over an existing project for that
+# reason.
 name: Homelab
 options:
   bundleIdPrefix: co.uk.suskins
