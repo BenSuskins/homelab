@@ -67,4 +67,16 @@ jobs:
             -project Homelab.xcodeproj \
             -scheme Homelab \
             -destination 'generic/platform=iOS Simulator' \
+            -resultBundlePath build.xcresult \
             CODE_SIGNING_ALLOWED=NO
+
+      # xcodebuild batches Swift compiles, and when one fails it can report
+      # nothing but "Command SwiftCompile failed with a nonzero exit code" —
+      # the diagnostics stay in the result bundle. Without this a red build
+      # says only that something broke, not what, which cost several rounds.
+      - name: Show build diagnostics
+        if: failure()
+        working-directory: apps/homelab-ios
+        run: |
+          xcrun xcresulttool get build-results \
+            --path build.xcresult --format json | head -c 20000

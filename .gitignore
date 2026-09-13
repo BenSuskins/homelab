@@ -83,5 +83,6 @@ apps/**/Package.resolved
 # time is no use. Per-user state inside it still stays out.
 apps/**/xcuserdata/
 apps/**/*.xcscmblueprint
+apps/**/*.xcresult
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,visualstudiocode,ansible,ssh
