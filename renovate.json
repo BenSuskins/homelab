@@ -16,7 +16,20 @@
       "matchManagers": [
         "ansible"
       ],
-      "pinDigests": false,
+      "pinDigests": false
+    },
+    {
+      "description": "Group minor and patch image bumps into one PR. Majors stay out of the group, so each one gets its own PR to review against its release notes.",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchManagers": [
+        "ansible"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
       "groupName": "Ansible Docker Images"
     },
     {
