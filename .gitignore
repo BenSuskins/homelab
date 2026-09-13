@@ -64,6 +64,7 @@ Temporary Items
 
 .ansible/
 .idea/
+plans/
 
 # Terraform
 terraform/**/.terraform/

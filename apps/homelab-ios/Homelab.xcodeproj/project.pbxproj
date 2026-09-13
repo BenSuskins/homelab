@@ -14,6 +14,7 @@
 		65D93D4F8615D02448F82353 /* BiometricWriteAuthorisation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 731958831B9B633EB7054215 /* BiometricWriteAuthorisation.swift */; };
 		726D460A6A0F19DC28F113AC /* HealthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7177A30531B54ABAF648B74F /* HealthView.swift */; };
 		7DF7462030EF407F093DD8A9 /* HomelabWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08651508EB54B059E554563C /* HomelabWidget.swift */; };
+		A4C6E9B1F73142C6B0012A51 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A4C6E9B0F73142C6B0012A51 /* Assets.xcassets */; };
 		916AD62C84ADB22FFBB8EEA2 /* HomelabWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7CFB96D029BCCA6191D25A4C /* HomelabWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		D2697C8422D16608BEB4C3EA /* HomelabCore in Frameworks */ = {isa = PBXBuildFile; productRef = BF9F2C480EDC92B38EA01F0C /* HomelabCore */; };
 		F5A70C89719CED83AAD5EC8F /* HomelabCore in Frameworks */ = {isa = PBXBuildFile; productRef = A99FA89E97B1CA43B6B380A3 /* HomelabCore */; };
@@ -55,6 +56,7 @@
 		731958831B9B633EB7054215 /* BiometricWriteAuthorisation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricWriteAuthorisation.swift; sourceTree = "<group>"; };
 		7CFB96D029BCCA6191D25A4C /* HomelabWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HomelabWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		A05C5B72EFC5C657A0A935D1 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
+		A4C6E9B0F73142C6B0012A51 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A54BA803DDC07167998D5FB7 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		B311B40B03C7E98009525D02 /* HomelabWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HomelabWidget.entitlements; sourceTree = "<group>"; };
 		CAE6AE406685F95AE12D0E1A /* RunsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunsView.swift; sourceTree = "<group>"; };
@@ -80,6 +82,17 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A4C6E9B2F73142C6B0012A51 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A4C6E9B1F73142C6B0012A51 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXGroup section */
 		18631C0DF24BF93A50B06CF6 /* Packages */ = {
@@ -121,6 +134,7 @@
 		B0B298AB3831B81200E946D1 /* HomelabApp */ = {
 			isa = PBXGroup;
 			children = (
+				A4C6E9B0F73142C6B0012A51 /* Assets.xcassets */,
 				731958831B9B633EB7054215 /* BiometricWriteAuthorisation.swift */,
 				7177A30531B54ABAF648B74F /* HealthView.swift */,
 				542F10223BDBCDEB406B4DE7 /* HomelabApp.entitlements */,
@@ -151,6 +165,7 @@
 			buildConfigurationList = DFD95495F14B6C1268E019F9 /* Build configuration list for PBXNativeTarget "HomelabApp" */;
 			buildPhases = (
 				321A4F3F63F3B06F667AEB0E /* Sources */,
+				A4C6E9B2F73142C6B0012A51 /* Resources */,
 				C31FD62B1FB86B6E4C26416D /* Frameworks */,
 				56E162842BE1EC46F5104CBE /* Embed Foundation Extensions */,
 			);
@@ -261,9 +276,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = Sources/HomelabApp/HomelabApp.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = PF88YZ2HU7;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = Sources/HomelabApp/Info.plist;
@@ -412,9 +429,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = Sources/HomelabApp/HomelabApp.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = PF88YZ2HU7;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = Sources/HomelabApp/Info.plist;
@@ -435,6 +454,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = Sources/HomelabWidget/HomelabWidget.entitlements;
 				DEVELOPMENT_TEAM = PF88YZ2HU7;
+				CURRENT_PROJECT_VERSION = 2;
 				INFOPLIST_FILE = Sources/HomelabWidget/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -453,6 +473,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = Sources/HomelabWidget/HomelabWidget.entitlements;
 				DEVELOPMENT_TEAM = PF88YZ2HU7;
+				CURRENT_PROJECT_VERSION = 2;
 				INFOPLIST_FILE = Sources/HomelabWidget/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
