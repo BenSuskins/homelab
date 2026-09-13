@@ -34,7 +34,7 @@ struct Entry: TimelineEntry {
 }
 
 struct Provider: TimelineProvider {
-    private static let cache = SnapshotCache(appGroup: WidgetSettings.appGroup)
+    private static let cache = SnapshotCache(appGroup: HomelabConfiguration.iOS.appGroup ?? "")
 
     func placeholder(in context: Context) -> Entry {
         Entry(date: Date(), snapshot: .placeholder, isStale: false)
@@ -89,8 +89,8 @@ struct Provider: TimelineProvider {
 
     private static func fetchSnapshot() async -> StatusSnapshot? {
         let tokens = KeychainTokenStore(
-            service: WidgetSettings.keychainService,
-            accessGroup: WidgetSettings.keychainAccessGroup
+            service: HomelabConfiguration.iOS.keychainService,
+            accessGroup: HomelabConfiguration.iOS.keychainAccessGroup
         )
         guard await tokens.token() != nil else { return nil }
 
@@ -111,19 +111,6 @@ struct Provider: TimelineProvider {
             lastRefreshedAt: Date()
         )
     }
-}
-
-/// Duplicated from the app target rather than shared, because the extension is
-/// a separate binary and these three values are its entire configuration.
-///
-/// While `keychainAccessGroup` is nil the token is unreadable from here — the
-/// two targets are separate app IDs — so `fetch()` returns nil and the widget
-/// renders from the App Group cache. See `AppConfiguration` for how to set up
-/// the shared group and let the widget refresh on its own.
-enum WidgetSettings {
-    static let appGroup = "group.co.uk.suskins.Homelab"
-    static let keychainService = "co.uk.suskins.Homelab"
-    static let keychainAccessGroup: String? = nil
 }
 
 /// Carries a value the compiler cannot prove `Sendable` across an isolation

@@ -31,7 +31,7 @@ struct SignInView: View {
                 session.signIn()
             }
             .buttonStyle(.borderedProminent)
-            .disabled(!AppConfiguration.isConfigured)
+            .disabled(!session.configuration.isConfigured)
 
             Text("A code appears next; type it into github.com on any device.")
                 .font(.caption2)

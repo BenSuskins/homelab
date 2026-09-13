@@ -106,12 +106,16 @@ The immutable value describing everything a surface renders at one moment — th
 _Avoid_: view model, menu state, Menu Snapshot
 
 **Transport**:
-The single impure step between `GitHubClient` and GitHub, behind the `GitHubTransport` protocol. There are exactly two: `GhCommandTransport` renders a request into `gh` argv on macOS, and `URLSessionTransport` sends it to `api.github.com` with a bearer token on iOS. The client builds a `GitHubRequest` — a method, a path and fields, or a GraphQL query — and does not know which transport will carry it.
+The single impure step between `GitHubClient` and GitHub, behind the `GitHubTransport` protocol. The client builds a `GitHubRequest` — a method, a path and fields, or a GraphQL query — and does not know what will carry it. `URLSessionTransport` is the only production implementation; a `GhCommandTransport` that shelled out to `gh` existed on macOS until ADR-0004 was amended, and the seam it forced is what made the iOS app cheap to add.
 _Avoid_: client, backend, API layer
 
 **Token Store**:
-Where the iOS app keeps its GitHub credential, behind the `TokenStoring` protocol so the Keychain is faked in tests like every other boundary. The macOS app has none — that is the whole distinction ADR-0004 records.
+Where an app keeps its GitHub credential, behind the `TokenStoring` protocol so the Keychain is faked in tests like every other boundary. Both apps have one, under different Keychain services so signing out of the phone does not sign out the Mac.
 _Avoid_: credential manager, keychain wrapper
+
+**Session**:
+The shared object that owns "are we signed in": it runs the device flow, holds the Token Store, and builds `AppState` only once there is a token — so no view below the root has to cope with a client that cannot authenticate. One per app, and the same type in both since ADR-0004's amendment.
+_Avoid_: auth manager, login state
 
 **Health Grid**:
 The iOS health screen's per-service up/down display, built from `gatus_results_endpoint_success` read straight from Prometheus over the tailnet and grouped by Host Label. Distinct from Gatus's own web UI, which it deliberately does not proxy or embed.

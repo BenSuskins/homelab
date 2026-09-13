@@ -13,6 +13,9 @@ on:
     paths: ['apps/**', '.github/workflows/apps.yml']
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   group: apps-${{ github.ref }}
   cancel-in-progress: true
@@ -32,8 +35,8 @@ jobs:
         working-directory: apps/homelab-core
         run: swift test
 
-      # Contract tests are excluded by name: they run the real `gh` against the
-      # live repository, which is not something CI should depend on.
+      # Contract tests are excluded by name: they hit the live API with the
+      # token you signed in with, which CI has no way to hold.
       - name: Test the menu bar app
         working-directory: apps/homelab-menubar
         run: swift test --skip Contract

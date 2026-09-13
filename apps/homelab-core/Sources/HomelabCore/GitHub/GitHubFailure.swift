@@ -1,9 +1,8 @@
 import Foundation
 
-/// Why a GitHub call did not produce usable bytes. Deliberately says nothing
-/// about `gh`: the command line tool is one transport of two, and its
-/// vocabulary (exit codes, "gh auth login") is mapped into these cases by
-/// `GhCommandTransport` rather than leaking up here.
+/// Why a GitHub call did not produce usable bytes. Deliberately transport
+/// neutral: it survived `gh` being one of two transports, and then `gh` being
+/// removed altogether, without a case changing.
 public enum GitHubFailure: Error, Equatable, Sendable {
     /// The transport itself could not run — `gh` is not installed, or the
     /// device has no route to `api.github.com`.

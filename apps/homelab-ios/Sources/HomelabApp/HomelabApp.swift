@@ -4,7 +4,17 @@ import WidgetKit
 
 @main
 struct HomelabApp: App {
-    @State private var session = Session()
+    @State private var session = Session(
+        configuration: .iOS,
+        tokens: KeychainTokenStore(
+            service: HomelabConfiguration.iOS.keychainService,
+            accessGroup: HomelabConfiguration.iOS.keychainAccessGroup
+        ),
+        cache: SnapshotCache(appGroup: HomelabConfiguration.iOS.appGroup ?? ""),
+        // No notifier: a suspended iOS app never sees the failure, so the
+        // widget is the ambient signal instead. See ADR-0005.
+        writeAuthorisation: BiometricWriteAuthorisation()
+    )
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {

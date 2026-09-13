@@ -45,13 +45,9 @@ compile is what there is to prove.
 ## How it differs from the macOS app
 
 The two share `HomelabCore` — domain types, `GitHubClient`, `StatusSnapshot`,
-`AppState`, the polling schedule. Three things genuinely differ:
+`AppState`, `Session`, the polling schedule — and since ADR-0004's amendment
+they share the sign-in flow and the OAuth client too. Two things still differ:
 
-- **It holds a token.** macOS shells out to `gh` and holds no credential; iOS
-  cannot spawn a subprocess, so it stores an OAuth token in the Keychain
-  (`WhenUnlockedThisDeviceOnly`, so a locked phone cannot be read and the token
-  never reaches an iCloud backup). `GhCommandTransport` and
-  `URLSessionTransport` are the two sides of that seam. **ADR-0004.**
 - **Writes are behind Face ID.** Trigger, cancel and merge all deploy. Reads are
   not gated — a status glance should not cost a prompt.
 - **There are no notifications.** A backgrounded iOS app is suspended within

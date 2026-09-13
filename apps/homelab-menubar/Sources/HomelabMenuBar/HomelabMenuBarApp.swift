@@ -4,12 +4,14 @@ import SwiftUI
 
 @main
 struct HomelabMenuBarApp: App {
-    /// `GhCommandTransport` is what keeps this app's original property intact:
-    /// it holds no credential, and `gh auth login` is the whole of its
-    /// credential management. The iOS app cannot do this, which is why the
-    /// transport is a seam at all — see ADR-0004.
-    @State private var state = AppState(
-        client: GitHubClient(transport: GhCommandTransport()),
+    /// One sign-in path with iOS, per the amendment to ADR-0004. `gh` used to
+    /// be this app's whole credential story; it now holds an OAuth token like
+    /// the phone does, which is what removed the two-transport split — and the
+    /// `PATH`-hunting that a GUI app needed to find `gh` at all.
+    @State private var session = Session(
+        configuration: .macOS,
+        tokens: KeychainTokenStore(service: HomelabConfiguration.macOS.keychainService),
+        cache: SnapshotCache(),
         notifier: FailureNotifier(),
         loginItem: LoginItemService()
     )
@@ -17,23 +19,28 @@ struct HomelabMenuBarApp: App {
     var body: some Scene {
         MenuBarExtra {
             MenuView()
-                .environment(state)
+                .environment(session)
+                .task { await session.restore() }
         } label: {
-            Image(systemName: state.snapshot.glyph.symbolName)
-                .symbolRenderingMode(state.snapshot.glyph == .failed ? .multicolor : .monochrome)
+            Image(systemName: glyphName)
+                .symbolRenderingMode(isFailed ? .multicolor : .monochrome)
         }
         .menuBarExtraStyle(.window)
-        .onChange(of: scenePhaseHasStarted, initial: true) { _, _ in
-            state.start()
-        }
 
         Settings {
             SettingsView()
-                .environment(state)
+                .environment(session)
         }
     }
 
-    /// `MenuBarExtra` has no scene phase of its own; this exists purely to give
-    /// `onChange(initial:)` something to fire against exactly once at launch.
-    private var scenePhaseHasStarted: Bool { true }
+    /// Signed out, the glyph is the app's own state rather than the lab's —
+    /// there is nothing to report until there is a token.
+    private var glyphName: String {
+        guard let state = session.appState else { return "server.rack" }
+        return state.snapshot.glyph.symbolName
+    }
+
+    private var isFailed: Bool {
+        session.appState?.snapshot.glyph == .failed
+    }
 }

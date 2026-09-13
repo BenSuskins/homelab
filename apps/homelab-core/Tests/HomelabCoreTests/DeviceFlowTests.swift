@@ -2,7 +2,15 @@ import Foundation
 import Testing
 @testable import HomelabCore
 
-@Suite("Device flow")
+/// `.serialized` is load-bearing: `ScriptedURLProtocol` queues its responses in
+/// static storage, and swift-testing runs tests in parallel by default. Two
+/// tests draining one queue means somebody gets `{}`, which is neither a token
+/// nor an error — so `awaitToken` treats it as "still pending" and spins until
+/// the grant expires. That hung CI for seven minutes before it was spotted.
+///
+/// `.timeLimit` is the backstop: if that ever recurs it fails in a minute with
+/// a name attached, instead of looking like a slow runner.
+@Suite("Device flow", .serialized, .timeLimit(.minutes(1)))
 struct DeviceFlowTests {
     private func flow(_ session: URLSession) -> DeviceFlow {
         DeviceFlow(
@@ -132,8 +140,16 @@ final class ScriptedURLProtocol: URLProtocol, @unchecked Sendable {
         return URLSession(configuration: configuration)
     }
 
+    /// An exhausted script answers with an unrecognised error rather than `{}`.
+    /// `{}` is indistinguishable from "still pending", so the poll loop would
+    /// spin on it until the grant expired; an unknown error code throws
+    /// immediately and names itself in the failure.
     private static func next() -> String {
-        lock.withLock { queued.isEmpty ? "{}" : queued.removeFirst() }
+        lock.withLock {
+            queued.isEmpty
+                ? #"{"error":"test_script_exhausted"}"#
+                : queued.removeFirst()
+        }
     }
 
     override class func canInit(with request: URLRequest) -> Bool { true }

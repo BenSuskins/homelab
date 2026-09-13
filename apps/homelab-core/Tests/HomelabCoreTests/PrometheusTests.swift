@@ -2,7 +2,10 @@ import Foundation
 import Testing
 @testable import HomelabCore
 
-@Suite("Prometheus decoding")
+/// `.serialized` for the same reason as the device flow suite: `StubURLProtocol`
+/// holds its canned response in static storage, so two tests running at once
+/// would answer each other's requests.
+@Suite("Prometheus decoding", .serialized)
 struct PrometheusDecodingTests {
     /// The decoding is exercised through a stubbed `URLProtocol` rather than a
     /// faked client, because the awkward part is the wire format itself: a
