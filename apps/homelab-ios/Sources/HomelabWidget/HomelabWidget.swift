@@ -49,6 +49,14 @@ struct Provider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> Void) {
+        // `TimelineProvider` predates `Sendable`, so its completion handler is
+        // not marked as such — and capturing it in a `Task` therefore trips
+        // Swift 6 region isolation, which cannot prove the caller will not
+        // touch the closure again. WidgetKit's contract is that it is called
+        // exactly once, from wherever the work finished, which is the whole
+        // point of handing an async-capable API a completion handler.
+        nonisolated(unsafe) let complete = completion
+
         Task {
             let cached = Self.cache.load()
             let fetched = await fetch()
@@ -64,7 +72,7 @@ struct Provider: TimelineProvider {
 
             if let fetched { Self.cache.save(fetched) }
 
-            completion(Timeline(
+            complete(Timeline(
                 entries: [entry],
                 policy: .after(Date().addingTimeInterval(15 * 60))
             ))
