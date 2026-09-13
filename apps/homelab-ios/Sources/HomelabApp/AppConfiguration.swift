@@ -7,13 +7,17 @@ enum AppConfiguration {
     /// secret, which is the reason it was chosen: there is nothing here that
     /// needs a server to hold it (ADR-0004).
     ///
-    /// Register at https://github.com/settings/developers with "Enable Device
-    /// Flow" ticked, then paste the ID here. There is no build-time secret and
-    /// no CI step; the placeholder simply makes the sign-in screen say so.
-    static let gitHubClientID = "Iv1.REPLACE_WITH_YOUR_CLIENT_ID"
+    /// Registered at https://github.com/settings/developers as an **OAuth app**
+    /// (not a GitHub App — that needs a private key and a server to exchange
+    /// it) with "Enable Device Flow" ticked. There is no client secret, which
+    /// is the reason device flow was chosen, so this string is not a
+    /// credential and is committed deliberately.
+    static let gitHubClientID = "Ov23liYVFMJmWmwdKHCN"
 
+    /// A fork with the ID stripped out gets a disabled sign-in button and a
+    /// line telling it why, rather than a 400 from GitHub.
     static var isConfigured: Bool {
-        !gitHubClientID.hasSuffix("REPLACE_WITH_YOUR_CLIENT_ID")
+        !gitHubClientID.isEmpty && !gitHubClientID.hasSuffix("REPLACE_WITH_YOUR_CLIENT_ID")
     }
 
     /// Shared with the widget extension so both read one cached snapshot.

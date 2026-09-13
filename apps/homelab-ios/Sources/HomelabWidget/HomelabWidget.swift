@@ -50,36 +50,44 @@ struct Provider: TimelineProvider {
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> Void) {
         // `TimelineProvider` predates `Sendable`, so its completion handler is
-        // not marked as such — and capturing it in a `Task` therefore trips
-        // Swift 6 region isolation, which cannot prove the caller will not
-        // touch the closure again. WidgetKit's contract is that it is called
-        // exactly once, from wherever the work finished, which is the whole
-        // point of handing an async-capable API a completion handler.
-        nonisolated(unsafe) let complete = completion
+        // not marked as such. `Task`'s operation is a `sending` parameter, so a
+        // closure that captures the handler is not Sendable and the compiler
+        // rejects the whole `Task`. Boxing is what actually fixes that — the
+        // capture becomes a Sendable value — where annotating the local does
+        // not, because the problem is the closure, not the variable.
+        //
+        // Safe because WidgetKit calls the handler exactly once, from wherever
+        // the work finished, which is the point of giving an async-capable API
+        // a completion handler in the first place.
+        let handler = UncheckedSendable(completion)
 
         Task {
-            let cached = Self.cache.load()
-            let fetched = await fetch()
-
-            // A failed fetch falls back to the cache rather than blanking — on
-            // a locked device the Keychain is unreadable by design, and that is
-            // the normal case for a widget, not an error.
-            let entry = Entry(
-                date: Date(),
-                snapshot: fetched ?? cached ?? .placeholder,
-                isStale: fetched == nil
-            )
-
-            if let fetched { Self.cache.save(fetched) }
-
-            complete(Timeline(
+            let entry = await Self.makeEntry()
+            handler.value(Timeline(
                 entries: [entry],
                 policy: .after(Date().addingTimeInterval(15 * 60))
             ))
         }
     }
 
-    private func fetch() async -> StatusSnapshot? {
+    /// `static` so the `Task` above captures nothing but the boxed handler.
+    private static func makeEntry() async -> Entry {
+        let cached = cache.load()
+        let fetched = await fetchSnapshot()
+
+        // A failed fetch falls back to the cache rather than blanking — on a
+        // locked device the Keychain is unreadable by design, and that is the
+        // normal case for a widget, not an error.
+        if let fetched { cache.save(fetched) }
+
+        return Entry(
+            date: Date(),
+            snapshot: fetched ?? cached ?? .placeholder,
+            isStale: fetched == nil
+        )
+    }
+
+    private static func fetchSnapshot() async -> StatusSnapshot? {
         let tokens = KeychainTokenStore(
             service: WidgetSettings.keychainService,
             accessGroup: WidgetSettings.keychainAccessGroup
@@ -116,6 +124,17 @@ enum WidgetSettings {
     static let appGroup = "group.co.uk.suskins.Homelab"
     static let keychainService = "co.uk.suskins.Homelab"
     static let keychainAccessGroup: String? = nil
+}
+
+/// Carries a value the compiler cannot prove `Sendable` across an isolation
+/// boundary, for the case where the API's own contract makes it safe. Used for
+/// exactly one thing here — WidgetKit's pre-`Sendable` completion handler.
+struct UncheckedSendable<Value>: @unchecked Sendable {
+    let value: Value
+
+    init(_ value: Value) {
+        self.value = value
+    }
 }
 
 struct HomelabWidgetView: View {
