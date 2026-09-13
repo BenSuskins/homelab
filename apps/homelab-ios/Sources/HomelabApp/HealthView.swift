@@ -93,7 +93,10 @@ struct HealthView: View {
                         Spacer()
                         Text(service.isUp ? "up" : "down")
                             .font(.caption)
-                            .foregroundStyle(service.isUp ? .secondary : .red)
+                            // Both branches spelled as Color: a ternary mixing
+                            // `.secondary` (hierarchical) with `.red` (a Color)
+                            // has no single ShapeStyle type to infer.
+                            .foregroundStyle(service.isUp ? Color.secondary : Color.red)
                     }
                 }
             }
@@ -136,7 +139,7 @@ private struct Reading: View {
             // zero that reads like a healthy measurement.
             Text(value ?? "—")
                 .font(.caption.monospacedDigit())
-                .foregroundStyle(value == nil ? .tertiary : .secondary)
+                .foregroundStyle(value == nil ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.secondary))
         }
     }
 }
