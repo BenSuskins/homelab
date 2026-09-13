@@ -186,6 +186,8 @@ It authenticates by shelling out to `gh`, so it holds no token. All GitHub acces
 
 **`update.yml` and `build-mcp-arr.yml` carry `paths-ignore: ['apps/**']`.** Both trigger on every push to `main`; without those blocks a commit touching only Swift code runs Ansible against all six hosts. Do not remove them. See `docs/adr/0003-menu-bar-app-lives-in-this-repo.md`.
 
+An iOS companion is scoped but not built: read `docs/ios-app-scope.md` before touching `apps/`, because Phase 0 moves the platform-neutral half of `HomelabMenuBarCore` into a shared `apps/homelab-core/` package. The two decisions it settled are `docs/adr/0004-the-ios-app-holds-a-token.md` (the iOS app cannot shell out to `gh`, so it holds a Keychain token and `gh` becomes one transport of two) and `docs/adr/0005-ios-ambient-status-is-a-widget.md` (no local notifications on iOS — a suspended app never sees the failure).
+
 ## Agent skills
 
 ### Issue tracker

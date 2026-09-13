@@ -19,6 +19,11 @@ requests, and jump to Homepage / Actions / the repo.
 └──────────────────────────────┘
 ```
 
+An iOS companion is scoped in [`docs/ios-app-scope.md`](../../docs/ios-app-scope.md).
+It starts by extracting the platform-neutral half of `HomelabMenuBarCore` into a
+shared `homelab-core` package, so most of what follows describes code that is
+expected to move.
+
 ## Requirements
 
 The [GitHub CLI](https://cli.github.com), authenticated:
