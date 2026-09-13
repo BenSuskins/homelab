@@ -2,120 +2,114 @@ import HomelabCore
 import SwiftUI
 import WidgetKit
 
-/// The iOS answer to the menu bar glyph: something you read without opening
+/// The iOS answer to the menu bar glyph: things you read without opening
 /// anything. Explicitly *not* an alerting mechanism — iOS treats a refresh
-/// interval as a hint and may honour it hours late, so this shows what was true
-/// the last time the system let it look. See ADR-0005.
+/// interval as a hint and may honour it hours late, so these show what was true
+/// the last time the system let them look. See ADR-0005.
+///
+/// There are three of them because one was not enough: runs answer "did my
+/// deploy work", health answers "is anything down", and pull requests answer
+/// "is there something waiting for me". Each offers the home-screen families
+/// and, where the content fits in a sentence, the lock-screen ones too.
 @main
 struct HomelabWidgetBundle: WidgetBundle {
     var body: some Widget {
         HomelabStatusWidget()
+        HomelabHealthWidget()
+        HomelabPullRequestsWidget()
     }
 }
 
-struct HomelabStatusWidget: Widget {
-    var body: some WidgetConfiguration {
-        StaticConfiguration(kind: "HomelabStatus", provider: Provider()) { entry in
-            HomelabWidgetView(entry: entry)
-                .containerBackground(.fill.tertiary, for: .widget)
-        }
-        .configurationDisplayName("Homelab")
-        .description("The state of the three workflows.")
-        .supportedFamilies([.systemSmall, .systemMedium])
-    }
-}
+// MARK: Shared plumbing
 
-struct Entry: TimelineEntry {
-    let date: Date
-    let snapshot: StatusSnapshot
-    /// True when the snapshot came from the cache because a fetch was not
-    /// possible — a locked device, or no network.
-    let isStale: Bool
-}
-
-struct Provider: TimelineProvider {
-    private static let cache = SnapshotCache(appGroup: HomelabConfiguration.iOS.appGroup ?? "")
-
-    func placeholder(in context: Context) -> Entry {
-        Entry(date: Date(), snapshot: .placeholder, isStale: false)
+enum WidgetData {
+    static var snapshotCache: SnapshotCache {
+        SnapshotCache(appGroup: HomelabConfiguration.iOS.appGroup ?? "")
     }
 
-    func getSnapshot(in context: Context, completion: @escaping (Entry) -> Void) {
-        completion(Entry(
-            date: Date(),
-            snapshot: Self.cache.load() ?? .placeholder,
-            isStale: false
-        ))
+    static var healthCache: HealthCache {
+        HealthCache(appGroup: HomelabConfiguration.iOS.appGroup ?? "")
     }
 
-    func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> Void) {
-        // `TimelineProvider` predates `Sendable`, so its completion handler is
-        // not marked as such. `Task`'s operation is a `sending` parameter, so a
-        // closure that captures the handler is not Sendable and the compiler
-        // rejects the whole `Task`. Boxing is what actually fixes that — the
-        // capture becomes a Sendable value — where annotating the local does
-        // not, because the problem is the closure, not the variable.
-        //
-        // Safe because WidgetKit calls the handler exactly once, from wherever
-        // the work finished, which is the point of giving an async-capable API
-        // a completion handler in the first place.
-        let handler = UncheckedSendable(completion)
-
-        Task {
-            let entry = await Self.makeEntry()
-            handler.value(Timeline(
-                entries: [entry],
-                policy: .after(Date().addingTimeInterval(15 * 60))
-            ))
-        }
+    /// How long until the system is next asked to refresh. A request, not a
+    /// promise — see ADR-0005.
+    static func nextRefresh(active: Bool) -> Date {
+        // A run in flight changes minute to minute; an idle homelab does not.
+        Date().addingTimeInterval(active ? 5 * 60 : 15 * 60)
     }
 
-    /// `static` so the `Task` above captures nothing but the boxed handler.
-    private static func makeEntry() async -> Entry {
-        let cached = cache.load()
-        let fetched = await fetchSnapshot()
-
-        // A failed fetch falls back to the cache rather than blanking — on a
-        // locked device the Keychain is unreadable by design, and that is the
-        // normal case for a widget, not an error.
-        if let fetched { cache.save(fetched) }
-
-        return Entry(
-            date: Date(),
-            snapshot: fetched ?? cached ?? .placeholder,
-            isStale: fetched == nil
-        )
-    }
-
-    private static func fetchSnapshot() async -> StatusSnapshot? {
+    static func client() async -> GitHubClient? {
         let tokens = KeychainTokenStore(
             service: HomelabConfiguration.iOS.keychainService,
             accessGroup: HomelabConfiguration.iOS.keychainAccessGroup
         )
+        // On a locked device the Keychain item is unreadable by design. That is
+        // the normal case for a widget, not an error: the caller falls back to
+        // the App Group cache.
         guard await tokens.token() != nil else { return nil }
+        return GitHubClient(transport: URLSessionTransport(tokens: tokens))
+    }
 
-        let client = GitHubClient(transport: URLSessionTransport(tokens: tokens))
+    /// The latest run of each workflow and the open pull requests — never a
+    /// run's history, which no widget draws and which a refresh budget the
+    /// system is watching would not thank us for.
+    ///
+    /// Both halves every time, even for a widget that shows one of them: all
+    /// three widgets share the App Group snapshot, so a fetch that wrote back
+    /// only the runs would delete the pull requests out from under the one that
+    /// draws them.
+    static func fetchStatus() async -> StatusSnapshot? {
+        guard let client = await client() else { return nil }
 
         var runs: [DispatchableWorkflow: WorkflowRunSummary] = [:]
         for workflow in DispatchableWorkflow.allCases {
             guard let run = try? await client.latestRun(for: workflow) else { continue }
             runs[workflow] = run
         }
-        guard !runs.isEmpty else { return nil }
 
-        // Pull requests are not fetched: the widget never shows them, and a
-        // widget refresh is a budget the system is watching.
+        let pullRequests = (try? await client.openPullRequests()) ?? []
+
+        guard !runs.isEmpty || !pullRequests.isEmpty else { return nil }
+
         return StatusSnapshot.make(
             runs: runs,
-            pullRequests: [],
+            pullRequests: pullRequests,
             lastRefreshedAt: Date()
         )
+    }
+
+    /// Health comes from Prometheus, which is tailnet-only, so this usually
+    /// fails and the cache is what gets drawn. Worth attempting anyway: a phone
+    /// at home is on the tailnet, which is exactly when the number matters.
+    static func fetchHealth() async -> HealthSnapshot? {
+        let client = PrometheusClient()
+        guard let samples = try? await client.instantQuery(HealthQuery.serviceSuccess),
+              !samples.isEmpty else { return nil }
+
+        let services = samples.compactMap { sample -> ServiceHealth? in
+            guard let name = sample["name"] else { return nil }
+            return ServiceHealth(
+                name: name,
+                host: sample["group"] ?? "Unknown",
+                isUp: sample.value == 1
+            )
+        }
+        .sorted { ($0.host, $0.name) < ($1.host, $1.name) }
+
+        return HealthSnapshot(services: services, hosts: [], lastRefreshedAt: Date())
     }
 }
 
 /// Carries a value the compiler cannot prove `Sendable` across an isolation
-/// boundary, for the case where the API's own contract makes it safe. Used for
-/// exactly one thing here — WidgetKit's pre-`Sendable` completion handler.
+/// boundary, for the case where the API's own contract makes it safe.
+///
+/// `TimelineProvider` predates `Sendable`, so its completion handler is not
+/// marked as such. `Task`'s operation is a `sending` parameter, so a closure
+/// capturing the handler is not Sendable and the compiler rejects the whole
+/// `Task`. Boxing is what actually fixes that — the capture becomes a Sendable
+/// value — where annotating the local does not, because the problem is the
+/// closure, not the variable. Safe because WidgetKit calls the handler exactly
+/// once, from wherever the work finished.
 struct UncheckedSendable<Value>: @unchecked Sendable {
     let value: Value
 
@@ -124,80 +118,51 @@ struct UncheckedSendable<Value>: @unchecked Sendable {
     }
 }
 
-struct HomelabWidgetView: View {
-    let entry: Entry
+// MARK: Shared views
 
-    @Environment(\.widgetFamily) private var family
+/// Wraps a widget's content in the palette and the container background, so
+/// every widget picks up the same appearance with one line.
+struct WidgetSurface<Content: View>: View {
+    @Environment(\.colorScheme) private var colorScheme
 
-    private var glyph: GlyphState { entry.snapshot.glyph }
+    private let content: Content
 
-    /// The worst row is the one worth showing: the widget answers "do I need to
-    /// open this?", exactly as the menu bar glyph does.
-    private var headline: RunRow? {
-        entry.snapshot.runRows.max { lhs, rhs in
-            rank(lhs.status) < rank(rhs.status)
-        }
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
-                Image(systemName: glyph.symbolName)
-                    .foregroundStyle(tint)
-                Text("Homelab")
-                    .font(.caption.weight(.semibold))
-                Spacer()
-                if entry.isStale {
-                    Image(systemName: "clock.arrow.circlepath")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                }
+        content
+            .homelabPalette(colorScheme)
+            .containerBackground(for: .widget) {
+                Palette.forScheme(colorScheme).canvas
             }
-
-            if let headline {
-                Text(headline.workflow.displayName)
-                    .font(.headline)
-                Text(headline.subtitle(now: entry.date))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-            } else {
-                Text("No data yet")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            if family == .systemMedium {
-                Spacer(minLength: 0)
-                HStack(spacing: 10) {
-                    ForEach(entry.snapshot.runRows) { row in
-                        HStack(spacing: 3) {
-                            Image(systemName: row.presentation.symbolName)
-                                .foregroundStyle(row.presentation.tint)
-                            Text(row.workflow.displayName)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
-            }
-        }
     }
+}
 
-    private var tint: Color {
-        switch glyph {
-        case .ok: .green
-        case .running: .accentColor
-        case .failed: .red
-        }
-    }
+/// The line every widget carries at the top: a dot, a name, and a clock when
+/// what is on screen came out of the cache rather than off the network.
+struct WidgetHeader: View {
+    @Environment(\.palette) private var palette
 
-    private func rank(_ status: RunStatus) -> Int {
-        switch status {
-        case .failed: 3
-        case .running, .queued: 2
-        case .awaitingApproval: 1
-        case .succeeded, .cancelled, .never: 0
+    let title: String
+    let tint: Color
+    let isStale: Bool
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Circle()
+                .fill(tint)
+                .frame(width: 7, height: 7)
+            Text(title)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(palette.textSecondary)
+            Spacer(minLength: 0)
+            if isStale {
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.system(size: 9))
+                    .foregroundStyle(palette.textTertiary)
+            }
         }
     }
 }

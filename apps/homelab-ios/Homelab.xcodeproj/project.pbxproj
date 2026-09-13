@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		2F61DFE5A67347DA4F00080F /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A05C5B72EFC5C657A0A935D1 /* SignInView.swift */; };
-		461DC5BDCA4D92CA7131E673 /* RunsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAE6AE406685F95AE12D0E1A /* RunsView.swift */; };
 		54F9BED11CD44E9EAC48334F /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A54BA803DDC07167998D5FB7 /* RootView.swift */; };
 		57FC1BBA724745A745B01F1C /* HomelabApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19EC8964D626BCD3CC42EAEB /* HomelabApp.swift */; };
 		65D93D4F8615D02448F82353 /* BiometricWriteAuthorisation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 731958831B9B633EB7054215 /* BiometricWriteAuthorisation.swift */; };
@@ -20,6 +19,13 @@
 		D2697C8422D16608BEB4C3EA /* HomelabCore in Frameworks */ = {isa = PBXBuildFile; productRef = BF9F2C480EDC92B38EA01F0C /* HomelabCore */; };
 		F5A70C89719CED83AAD5EC8F /* HomelabCore in Frameworks */ = {isa = PBXBuildFile; productRef = A99FA89E97B1CA43B6B380A3 /* HomelabCore */; };
 		FB5443B7248604C6A9F388B4 /* PullRequestsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF443BA5FAAB8C677D6234F6 /* PullRequestsView.swift */; };
+		B363C57058B9A44FEACE1330 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = B76672711341EBD1A610E06C /* Components.swift */; };
+		FB3894CBD0A1C376A8774AED /* ChartViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3101E0EE7B0F14C353831E11 /* ChartViews.swift */; };
+		AC278CFE1FC4F9BA6AB0CAA1 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DAED6035946E6EE8C0D76B9 /* HomeView.swift */; };
+		ECE6BE8DDF8C0C6BEC371AC1 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F320F278430EDA72B2AE57CD /* ProfileView.swift */; };
+		13E8C61B2556126D814B9FCC /* StatusWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3F55A4814378F280AD8DFB /* StatusWidget.swift */; };
+		9137C4BC4385D56D30497A59 /* HealthWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFCCBA85D2DBA69EB2170159 /* HealthWidget.swift */; };
+		18EC96732C710E7ED696A48D /* PullRequestsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C41FEC9BD25D38E5002A542 /* PullRequestsWidget.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -61,9 +67,15 @@
 		A4C6E9B0F73142C6B0012A51 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A54BA803DDC07167998D5FB7 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		B311B40B03C7E98009525D02 /* HomelabWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HomelabWidget.entitlements; sourceTree = "<group>"; };
-		CAE6AE406685F95AE12D0E1A /* RunsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunsView.swift; sourceTree = "<group>"; };
 		E34738F61AA891FEB73B68F9 /* homelab-core */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "homelab-core"; path = "../homelab-core"; sourceTree = SOURCE_ROOT; };
 		EF443BA5FAAB8C677D6234F6 /* PullRequestsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PullRequestsView.swift; sourceTree = "<group>"; };
+		B76672711341EBD1A610E06C /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
+		3101E0EE7B0F14C353831E11 /* ChartViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartViews.swift; sourceTree = "<group>"; };
+		8DAED6035946E6EE8C0D76B9 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		F320F278430EDA72B2AE57CD /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
+		5E3F55A4814378F280AD8DFB /* StatusWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusWidget.swift; sourceTree = "<group>"; };
+		CFCCBA85D2DBA69EB2170159 /* HealthWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthWidget.swift; sourceTree = "<group>"; };
+		3C41FEC9BD25D38E5002A542 /* PullRequestsWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PullRequestsWidget.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -129,6 +141,9 @@
 				B311B40B03C7E98009525D02 /* HomelabWidget.entitlements */,
 				08651508EB54B059E554563C /* HomelabWidget.swift */,
 				32ED3A9AC7D6378332669C7D /* Info.plist */,
+				5E3F55A4814378F280AD8DFB /* StatusWidget.swift */,
+				CFCCBA85D2DBA69EB2170159 /* HealthWidget.swift */,
+				3C41FEC9BD25D38E5002A542 /* PullRequestsWidget.swift */,
 			);
 			path = HomelabWidget;
 			sourceTree = "<group>";
@@ -145,8 +160,11 @@
 				0EA05B531B5F95F3CEE5D217 /* Info.plist */,
 				EF443BA5FAAB8C677D6234F6 /* PullRequestsView.swift */,
 				A54BA803DDC07167998D5FB7 /* RootView.swift */,
-				CAE6AE406685F95AE12D0E1A /* RunsView.swift */,
 				A05C5B72EFC5C657A0A935D1 /* SignInView.swift */,
+				B76672711341EBD1A610E06C /* Components.swift */,
+				3101E0EE7B0F14C353831E11 /* ChartViews.swift */,
+				8DAED6035946E6EE8C0D76B9 /* HomeView.swift */,
+				F320F278430EDA72B2AE57CD /* ProfileView.swift */,
 			);
 			path = HomelabApp;
 			sourceTree = "<group>";
@@ -252,8 +270,11 @@
 				57FC1BBA724745A745B01F1C /* HomelabApp.swift in Sources */,
 				FB5443B7248604C6A9F388B4 /* PullRequestsView.swift in Sources */,
 				54F9BED11CD44E9EAC48334F /* RootView.swift in Sources */,
-				461DC5BDCA4D92CA7131E673 /* RunsView.swift in Sources */,
 				2F61DFE5A67347DA4F00080F /* SignInView.swift in Sources */,
+				B363C57058B9A44FEACE1330 /* Components.swift in Sources */,
+				FB3894CBD0A1C376A8774AED /* ChartViews.swift in Sources */,
+				AC278CFE1FC4F9BA6AB0CAA1 /* HomeView.swift in Sources */,
+				ECE6BE8DDF8C0C6BEC371AC1 /* ProfileView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -262,6 +283,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				7DF7462030EF407F093DD8A9 /* HomelabWidget.swift in Sources */,
+				13E8C61B2556126D814B9FCC /* StatusWidget.swift in Sources */,
+				9137C4BC4385D56D30497A59 /* HealthWidget.swift in Sources */,
+				18EC96732C710E7ED696A48D /* PullRequestsWidget.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -1,32 +1,59 @@
 # Homelab (iOS)
 
 The phone half of [`../homelab-menubar`](../homelab-menubar): the same three
-Dispatchable Workflows, the same pull request list, plus a service health screen
-and a home-screen widget.
+Dispatchable Workflows, the same pull request list, plus service health, logs,
+and three home-screen widgets.
 
 ```
-┌──────────────────────────┐   Widget (small)
-│ ⚙ Homelab                │   ┌──────────────┐
-│                          │   │ ⚙ Homelab    │
-│ ✓ Update    passed · 2h  │▶  │ Update       │
-│ ⏸ Terraform awaiting…    │   │ passed · 2h  │
-│ ◐ Clean     running 3m12s│■  └──────────────┘
-├──────────────────────────┤
-│  Runs · PRs · Health · Logs│
-└──────────────────────────┘
+┌──────────────────────────────┐   Widgets
+│ Homelab                   ◍  │   ┌──────────────┐ ┌──────────────┐
+│ ┌──────────────────────────┐ │   │ ● Homelab    │ │ ● Services   │
+│ │ ● All workflows green    │ │   │ Update       │ │ 27/27        │
+│ │ Updated 2m · 7 deploys   │ │▶  │ passed · 2h  │ │ all up       │
+│ └──────────────────────────┘ │   └──────────────┘ └──────────────┘
+│ [96% pass][7 deploys][3 PRs] │
+│ WORKFLOWS                    │   Workflows · Service health ·
+│ ┌ ● Update      passed  ▶ ┐  │   Pull requests, each at several
+│ │ ▁▃▂▅▂▁▃▂▁▄▂▁▃  96% · 4m │  │   sizes plus the lock screen.
+│ └─────────────────────────┘  │
+│ RECENT ACTIVITY              │
+├──────────────────────────────┤
+│  Home · PRs · Health · Logs  │
+└──────────────────────────────┘
 ```
+
+## What is on each screen
+
+- **Home** — the status hero (is anything wrong), a strip of numbers, then one
+  card per workflow carrying its last twenty runs as duration bars, its pass
+  rate and its median duration. Underneath, the runs of all three interleaved
+  into one timeline. The trigger and cancel buttons are on the cards.
+- **Pull requests** — split into what will merge cleanly and what will not, with
+  the squash button on the row rather than behind an invisible swipe. The label
+  says what merging does: it deploys.
+- **Health** — a window picker (1H/6H/24H/7D) scoping every chart at once, the
+  status strip, how many endpoints were failing over that window, then one card
+  per host. Tapping a host opens its CPU, memory, disk and load charts.
+- **Logs** — host and container filters as menus, an explicit live-tail toggle,
+  and lines tinted by a level read out of the line itself.
+- **Account** — behind the avatar in the top right, on every screen. Sign-out
+  lives here rather than under the deploy buttons.
+
+Nothing on any screen is a system list or a form. The palette, the type scale
+and the spacing come from `HomelabCore/Design`, shared with the widgets so the
+two cannot drift.
 
 ## What it needs before it will run
 
 1. **A GitHub OAuth app.** <https://github.com/settings/developers> → New OAuth
    App → tick **Enable Device Flow**. Put the client ID in
-   `Sources/HomelabApp/AppConfiguration.swift`. There is no client secret and no
-   server: that is why device flow was chosen (ADR-0004). The sign-in button
-   stays disabled until you replace the placeholder.
+   `HomelabConfiguration.iOS`, in the shared package. There is no client secret
+   and no server: that is why device flow was chosen (ADR-0004). The sign-in
+   button stays disabled until you replace the placeholder.
 2. **An Apple Developer Programme membership**, for the App Group and a
    provisioning profile that lasts a year rather than a week.
-3. **Tailscale on the device**, for the Health tab only. Runs and pull requests
-   work from anywhere.
+3. **Tailscale on the device**, for the Health and Logs tabs. Runs and pull
+   requests work from anywhere.
 
 ## Build
 
@@ -56,36 +83,58 @@ they share the sign-in flow and the OAuth client too. Two things still differ:
   not gated — a status glance should not cost a prompt.
 - **There are no notifications.** A backgrounded iOS app is suspended within
   seconds, so the polling loop stops and a local notification could only fire
-  while you were already looking at the app. The widget is the ambient signal
-  instead, and it is *not* an alerting mechanism: iOS treats the fifteen-minute
-  refresh as a hint and may honour it hours late. **ADR-0005.**
+  while you were already looking at the app. The widgets are the ambient signal
+  instead, and they are *not* an alerting mechanism: iOS treats the refresh
+  interval as a hint and may honour it hours late. **ADR-0005.**
 
-## The widget refreshes from cache until you share a Keychain group
+## The widgets
 
-Out of the box the widget renders from the App Group cache the app writes when
-it is foregrounded, because the app and the extension are separate app IDs and
-the extension cannot read the app's Keychain item. It is therefore only as fresh
-as your last visit to the app.
+Three of them, each in the gallery under its own name:
 
-To let it fetch on its own, add a `keychain-access-groups` entitlement of
-`$(AppIdentifierPrefix)co.uk.suskins.Homelab` to both targets and set the literal
-team-prefixed value in `AppConfiguration.keychainAccessGroup` **and**
-`WidgetSettings.keychainAccessGroup`. Either way it stays an ambient indicator,
-not an alert — iOS decides when a timeline actually refreshes.
+| Widget | Shows | Families |
+|---|---|---|
+| Workflows | The three Run Rows and the worst of them | small, medium, large, circular, rectangular, inline |
+| Service health | How many endpoints are up, and which are not | small, medium, rectangular, inline |
+| Pull requests | Open count, how many are ready, the top three | small, medium, rectangular, inline |
+
+They share one App Group snapshot, so every refresh writes back both the runs
+and the pull requests — a fetch that saved only its own half would delete the
+other widget's data.
+
+Out of the box they render from the cache the app writes while it is
+foregrounded, because the app and the extension are separate app IDs and the
+extension cannot read the app's Keychain item. They are therefore only as fresh
+as your last visit, and say so with a clock glyph.
+
+To let them fetch on their own, add a `keychain-access-groups` entitlement of
+`$(AppIdentifierPrefix)co.uk.suskins.Homelab` to both targets and set the
+literal team-prefixed value in `HomelabConfiguration.iOS.keychainAccessGroup`.
+Either way they stay ambient indicators, not alerts — iOS decides when a
+timeline actually refreshes (**ADR-0005**).
+
+Service health is the exception that cannot fetch at all most of the time:
+Prometheus is tailnet-only, so that widget is drawing what the app last read
+unless the phone happens to be on the tailnet when iOS wakes it.
 
 ## The Health tab
 
 Reads Prometheus directly on `192.168.0.203:9090` over the tailnet, not through
 `prometheus.suskins.co.uk`, which sits behind Authelia. Service state comes from
 `gatus_results_endpoint_success` — the same series the `gatus-endpoint-down`
-alert rule uses — and host tiles from `node_*`.
+alert rule uses — and the host charts from `node_*`.
+
+Every number on the screen is the last point of a line drawn directly
+underneath it. That is one fetch rather than two, and it makes a tile
+disagreeing with the chart beside it impossible rather than merely unlikely.
+The window picker owns the Prometheus `step` and `rate()` interval for each
+span, so a 7-day chart is not sampled as if it were an hour.
 
 It obeys `docs/adr/0001-host-label-canonical-for-dashboards.md`: grouped by the
 Host Label, never `instance`, and never using `up` for liveness, because those
 series are Remote-Written by Alloy and produce no `up`.
 
 GitHub and Prometheus are independent failure domains, so off the tailnet the
-Health tab alone says "not connected" and the other two keep working.
+Health and Logs tabs alone say "not connected" and the other two keep working.
 
 ## The Logs tab
 
@@ -93,3 +142,9 @@ Reads container logs from Loki directly on `192.168.0.203:3100` over the
 tailnet. It supports a one-hour history by default, host and container filters,
 and an explicit live-tail mode. Loki receives the same Friendly Name `host`
 label that Prometheus uses. The viewer does not include host journal logs.
+
+Lines are tinted by a level read out of the line itself, because
+`loki.source.docker` ships container stdout verbatim — there is no level label
+to read, and every container writes its own format. The scan is deliberately
+coarse and only ever tints a line; it never filters one out, so a
+misclassified line is a missing colour rather than a missing log.

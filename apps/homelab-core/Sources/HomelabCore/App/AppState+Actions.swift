@@ -44,7 +44,10 @@ extension AppState {
             return
         }
         // The merge pushes to main, which starts Update Homelab — refresh so the
-        // run appears, and re-pace the loop now that something is active.
+        // run appears, and re-pace the loop now that something is active. The
+        // history goes with it, so the new run shows up in its own chart rather
+        // than two minutes later.
+        invalidateHistory()
         await refresh()
         restartPolling()
     }
@@ -71,6 +74,7 @@ extension AppState {
             return
         }
 
+        invalidateHistory()
         await refresh()
         restartPolling()
     }

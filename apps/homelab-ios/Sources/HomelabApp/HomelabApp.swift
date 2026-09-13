@@ -12,8 +12,16 @@ struct HomelabApp: App {
         ),
         cache: SnapshotCache(appGroup: HomelabConfiguration.iOS.appGroup ?? ""),
         // No notifier: a suspended iOS app never sees the failure, so the
-        // widget is the ambient signal instead. See ADR-0005.
-        writeAuthorisation: BiometricWriteAuthorisation()
+        // widgets are the ambient signal instead. See ADR-0005.
+        writeAuthorisation: BiometricWriteAuthorisation(),
+        // The health widget cannot reach Prometheus unless the phone happens to
+        // be on the tailnet when iOS decides to refresh it, so the app writes
+        // every reading it takes to the App Group and the widget falls back to
+        // that. It is then as fresh as your last visit, which is honest and is
+        // what the widget says on its face.
+        healthMonitor: HealthMonitor(
+            cache: HealthCache(appGroup: HomelabConfiguration.iOS.appGroup ?? "")
+        )
     )
     @Environment(\.scenePhase) private var scenePhase
 

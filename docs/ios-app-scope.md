@@ -226,11 +226,20 @@ host-level logs are not in Loki today. The Logs tab uses
 as the `host` label, and the app provides host and container pickers instead of
 a free-text LogQL box.
 
-**Metrics — ~1 week on top of Phase 5.** Extend the Prometheus client with
-native Swift Charts per-host and per-container views. The cheap alternative is
-embedding Grafana in a `WKWebView` with `&kiosk`, but Grafana is `secured: true`
-so you meet an Authelia login inside the webview, and the dashboards are laid
-out for a desktop.
+**Metrics — implemented in the iOS app.** `PrometheusClient` gained
+`rangeQuery`, and the Health tab is now charts over a selectable Metric Window
+rather than a snapshot: per-host CPU, memory, disk and load, plus how many
+endpoints were failing across the window. Every tile reads the last point of the
+line drawn beneath it, so one fetch feeds both. The cheap alternative — Grafana
+in a `WKWebView` with `&kiosk` — was not taken: Grafana is `secured: true`, so
+you meet an Authelia login inside the webview, and the dashboards are laid out
+for a desktop. Per-*container* metrics are still not built.
+
+**Run history — implemented in the iOS app.** The workflow-runs endpoint is
+asked for a page rather than a row, which cost no extra calls, and the home
+screen draws duration bars, pass rate, median duration and a cross-workflow
+timeline from it. The deep page is fetched at most every two minutes; a poll
+during an active run asks for one run.
 
 **SSH — 2–3 weeks, highest risk.** SwiftNIO SSH, or Citadel on top of it. Build
 a *command palette, not a terminal*: `docker ps`, `docker logs --tail`,

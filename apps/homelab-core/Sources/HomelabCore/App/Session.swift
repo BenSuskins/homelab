@@ -21,6 +21,9 @@ public final class Session {
 
     public private(set) var phase: Phase = .checking
     public private(set) var appState: AppState?
+    /// Who the token belongs to. Nil until the first read lands, which is fine:
+    /// the profile button falls back to a glyph, so nothing waits on it.
+    public private(set) var viewer: GitHubViewer?
     public private(set) var healthMonitor: HealthMonitor
     public private(set) var logMonitor: LogMonitor
 
@@ -104,6 +107,7 @@ public final class Session {
         pollingTask?.cancel()
         appState?.stop()
         appState = nil
+        viewer = nil
         try? await tokens.clear()
         phase = .signedOut(message: nil)
     }
@@ -117,13 +121,22 @@ public final class Session {
     }
 
     private func activate() {
+        let client = GitHubClient(transport: URLSessionTransport(tokens: tokens))
         appState = AppState(
-            client: GitHubClient(transport: URLSessionTransport(tokens: tokens)),
+            client: client,
             cache: cache,
             notifier: notifier,
             loginItem: loginItem,
             writeAuthorisation: writeAuthorisation
         )
         phase = .signedIn
+
+        // Fire and forget: the account's name and avatar are decoration on a
+        // button, so a failure here must not hold up a session that is
+        // otherwise perfectly usable.
+        Task { [weak self] in
+            let viewer = try? await client.viewer()
+            self?.viewer = viewer
+        }
     }
 }

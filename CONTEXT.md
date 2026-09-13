@@ -121,6 +121,18 @@ _Avoid_: auth manager, login state
 The iOS health screen's per-service up/down display, built from `gatus_results_endpoint_success` read straight from Prometheus over the tailnet and grouped by Host Label. Distinct from Gatus's own web UI, which it deliberately does not proxy or embed.
 _Avoid_: status page, uptime screen
 
+**Run History**:
+The last twenty runs of one Dispatchable Workflow, and the things computed from them — pass rate, median duration, duration trend, the bars of the chart under each workflow card. Cancelled and in-flight runs are excluded from every figure: a run somebody stopped is not evidence about the workflow, and one still going has no verdict. `ActivityHistory` is all three together, plus the cross-workflow numbers the home screen leads with. Deliberately not part of the Status Snapshot, which is cached for the widgets and shared with macOS.
+_Avoid_: run log, build history
+
+**Metric Window**:
+How far back a chart looks — 1H, 6H, 24H or 7D — each carrying its own Prometheus `step` and `rate()` interval, chosen to land near 120 points. One value scopes every chart on the Health screen at once, so two panels can never be showing different spans.
+_Avoid_: time range, period
+
+**Palette**:
+The colour tokens both apps and all three widgets draw from, as one value per appearance in `HomelabCore/Design`. Dark is the designed appearance and light is a real mapping of it. The rule the palette exists to enforce: one accent, used only for interaction, and colour otherwise means status — so a screen with nothing wrong is nearly monochrome.
+_Avoid_: theme, colour scheme (that is the system's term for light/dark)
+
 **Write**:
 Any of the three operations that change something on GitHub — dispatch, cancel, squash merge. Named as a category because they share one rule: on iOS every Write is behind a biometric prompt and no read ever is.
 _Avoid_: action, mutation, command

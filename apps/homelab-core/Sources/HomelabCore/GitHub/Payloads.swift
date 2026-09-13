@@ -59,3 +59,17 @@ struct PullRequestNode: Decodable {
     let createdAt: Date
     let url: URL
 }
+
+struct ViewerPayload: Decodable {
+    let login: String
+    let name: String?
+    let avatarURL: URL?
+    let profileURL: URL?
+
+    enum CodingKeys: String, CodingKey {
+        case login
+        case name
+        case avatarURL = "avatar_url"
+        case profileURL = "html_url"
+    }
+}

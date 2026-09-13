@@ -5,39 +5,78 @@ struct SignInView: View {
     let message: String?
 
     @Environment(Session.self) private var session
+    @Environment(\.palette) private var palette
 
     var body: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "server.rack")
-                .font(.system(size: 44))
-                .foregroundStyle(.secondary)
+        ZStack {
+            palette.canvas.ignoresSafeArea()
 
-            Text("Homelab")
-                .font(.largeTitle.weight(.semibold))
+            VStack(spacing: 0) {
+                Spacer()
 
-            Text("Sign in with GitHub to run the workflows and merge pull requests.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+                VStack(spacing: 14) {
+                    Image(systemName: "square.stack.3d.up")
+                        .font(.system(size: 34, weight: .light))
+                        .foregroundStyle(palette.accent)
 
-            if let message {
-                Label(message, systemImage: "exclamationmark.triangle")
-                    .font(.footnote)
-                    .foregroundStyle(.orange)
-                    .multilineTextAlignment(.center)
+                    Text("Homelab")
+                        .font(Typeface.title)
+                        .foregroundStyle(palette.textPrimary)
+
+                    Text("Run the workflows, merge the pull requests, and watch the hosts.")
+                        .font(Typeface.caption)
+                        .foregroundStyle(palette.textSecondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.horizontal, 24)
+                }
+
+                Spacer()
+
+                VStack(spacing: 12) {
+                    if let message {
+                        HStack(spacing: 6) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.system(size: 10))
+                            Text(message)
+                                .font(Typeface.caption)
+                                .multilineTextAlignment(.leading)
+                        }
+                        .foregroundStyle(palette.warning)
+                        .padding(12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(
+                            RoundedRectangle(cornerRadius: Metrics.innerCorner, style: .continuous)
+                                .fill(palette.warning.opacity(0.1))
+                        )
+                    }
+
+                    Button {
+                        session.signIn()
+                    } label: {
+                        Text("Sign in with GitHub")
+                            .font(Typeface.body)
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 13)
+                            .background(
+                                RoundedRectangle(cornerRadius: Metrics.corner, style: .continuous)
+                                    .fill(palette.accent)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(!session.configuration.isConfigured)
+                    .opacity(session.configuration.isConfigured ? 1 : 0.4)
+
+                    Text("A code appears next; type it into github.com on any device.")
+                        .font(Typeface.footnote)
+                        .foregroundStyle(palette.textTertiary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 40)
             }
-
-            Button("Sign in with GitHub") {
-                session.signIn()
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(!session.configuration.isConfigured)
-
-            Text("A code appears next; type it into github.com on any device.")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
         }
-        .padding(32)
     }
 }
 
@@ -47,35 +86,72 @@ struct DeviceCodeView: View {
     let grant: DeviceCodeGrant
 
     @Environment(Session.self) private var session
+    @Environment(\.palette) private var palette
     @Environment(\.openURL) private var openURL
 
     var body: some View {
-        VStack(spacing: 24) {
-            Text("Enter this code on GitHub")
-                .font(.headline)
+        ZStack {
+            palette.canvas.ignoresSafeArea()
 
-            Text(grant.userCode)
-                .font(.system(size: 40, weight: .bold, design: .monospaced))
-                .textSelection(.enabled)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 12)
-                .background(.quaternary, in: .rect(cornerRadius: 12))
+            VStack(spacing: 22) {
+                Spacer()
 
-            Button {
-                openURL(grant.verificationURL)
-            } label: {
-                Label("Open github.com/login/device", systemImage: "safari")
+                Text("Enter this code on GitHub")
+                    .font(Typeface.headline)
+                    .foregroundStyle(palette.textPrimary)
+
+                Text(grant.userCode)
+                    .font(.system(size: 38, weight: .bold, design: .monospaced))
+                    .foregroundStyle(palette.textPrimary)
+                    .tracking(3)
+                    .textSelection(.enabled)
+                    .padding(.horizontal, 22)
+                    .padding(.vertical, 14)
+                    .background(
+                        RoundedRectangle(cornerRadius: Metrics.corner, style: .continuous)
+                            .fill(palette.surface)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Metrics.corner, style: .continuous)
+                            .strokeBorder(palette.border, lineWidth: Metrics.hairline)
+                    )
+
+                Button {
+                    openURL(grant.verificationURL)
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "safari")
+                            .font(.system(size: 12))
+                        Text("Open github.com/login/device")
+                            .font(Typeface.body)
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: Metrics.corner, style: .continuous)
+                            .fill(palette.accent)
+                    )
+                }
+                .buttonStyle(.plain)
+
+                HStack(spacing: 7) {
+                    ProgressView().controlSize(.mini).tint(palette.textTertiary)
+                    Text("Waiting for authorisation…")
+                        .font(Typeface.caption)
+                        .foregroundStyle(palette.textSecondary)
+                }
+
+                Spacer()
+
+                Button("Cancel") {
+                    session.cancelSignIn()
+                }
+                .font(Typeface.caption)
+                .foregroundStyle(palette.textSecondary)
+                .padding(.bottom, 32)
             }
-            .buttonStyle(.borderedProminent)
-
-            ProgressView("Waiting for authorisation…")
-                .font(.footnote)
-
-            Button("Cancel", role: .cancel) {
-                session.cancelSignIn()
-            }
-            .font(.footnote)
+            .padding(.horizontal, 28)
         }
-        .padding(32)
     }
 }
