@@ -55,6 +55,11 @@ jobs:
 
       # No test step: the iOS target is views and wiring over HomelabCore,
       # which the job above covers. A clean compile is what there is to prove.
+      #
+      # `generic/platform=iOS Simulator` rather than a named device: this only
+      # ever compiles, and naming one ties the job to whichever simulators the
+      # runner image happens to ship — which is how the first run of this
+      # workflow failed, on a missing "iPhone 16", before building anything.
       - name: Build for the simulator
         working-directory: apps/homelab-ios
         run: |
@@ -62,5 +67,5 @@ jobs:
           xcodebuild build \
             -project Homelab.xcodeproj \
             -scheme Homelab \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO

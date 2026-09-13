@@ -5,7 +5,6 @@ STAGE_DIR   := .build/$(BUNDLE)
 INSTALL_DIR := /Applications
 CORE_DIR    := ../homelab-core
 IOS_DIR     := ../homelab-ios
-SIMULATOR   ?= iPhone 17
 
 .PHONY: all test test-core test-menubar build bundle install clean run \
         ios-generate ios-build
@@ -54,10 +53,12 @@ run: bundle
 ios-generate:
 	cd $(IOS_DIR) && xcodegen generate
 
+# A generic destination, not a named simulator: this target only compiles, and
+# naming a device ties it to whichever simulators happen to be installed.
 ios-build: ios-generate
 	cd $(IOS_DIR) && xcodebuild build \
 		-project Homelab.xcodeproj -scheme Homelab \
-		-destination 'platform=iOS Simulator,name=$(SIMULATOR)'
+		-destination 'generic/platform=iOS Simulator'
 
 clean:
 	swift package clean

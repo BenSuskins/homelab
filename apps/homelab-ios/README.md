@@ -33,7 +33,7 @@ and a home-screen widget.
 ```bash
 cd ../homelab-menubar
 make ios-generate    # xcodegen → Homelab.xcodeproj (never committed)
-make ios-build       # xcodebuild against the simulator
+make ios-build       # xcodebuild against the simulator SDK (compile only)
 ```
 
 Then open `Homelab.xcodeproj`, set your team on both targets, and run.
