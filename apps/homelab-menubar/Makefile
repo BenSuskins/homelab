@@ -6,8 +6,7 @@ INSTALL_DIR := /Applications
 CORE_DIR    := ../homelab-core
 IOS_DIR     := ../homelab-ios
 
-.PHONY: all test test-core test-menubar build bundle install clean run \
-        ios-build ios-bootstrap-project
+.PHONY: all test test-core test-menubar build bundle install clean run ios-build
 
 all: bundle
 
@@ -58,21 +57,6 @@ ios-build:
 	cd $(IOS_DIR) && xcodebuild build \
 		-project Homelab.xcodeproj -scheme Homelab \
 		-destination 'generic/platform=iOS Simulator'
-
-# One-off, to seed the committed project from project.yml. Run it once, commit
-# the result, then delete project.yml and this target.
-#
-# It refuses to run over an existing project on purpose: regenerating would
-# silently discard anything changed in Xcode, which is exactly the failure mode
-# that makes a generated-and-committed project worse than either alternative.
-ios-bootstrap-project:
-	@test ! -d $(IOS_DIR)/Homelab.xcodeproj \
-		|| { echo "Homelab.xcodeproj exists — edit it in Xcode."; exit 1; }
-	command -v xcodegen >/dev/null || brew install xcodegen
-	cd $(IOS_DIR) && xcodegen generate
-	@echo ""
-	@echo "Generated $(IOS_DIR)/Homelab.xcodeproj."
-	@echo "Commit it, then delete $(IOS_DIR)/project.yml and this target."
 
 clean:
 	swift package clean

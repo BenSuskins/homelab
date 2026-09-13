@@ -125,8 +125,7 @@ This started as XcodeGen with a gitignored project, on the reasoning that a
 `.xcodeproj` is a merge-conflict machine. That was reversed once it emerged
 that TestFlight deployment goes through **Xcode Cloud**, which discovers the
 project by scanning the repository — a generated one is not there to be found
-when you set the workflow up. `project.yml` seeded the committed project via a
-one-off `make ios-bootstrap-project` and is deleted afterwards.
+when you set the workflow up. `project.yml` seeded the committed project and was then deleted.
 
 Add `.github/workflows/apps.yml` on `paths: ['apps/**']`, `runs-on: macos-15` —
 the mirror image of the `paths-ignore` blocks ADR-0003 describes. Nothing builds
