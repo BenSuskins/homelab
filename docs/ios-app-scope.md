@@ -217,13 +217,14 @@ app via the GitHub contents API. No new infrastructure, no new auth, and it
 works off-tailnet. This gives the command-centre screen its service list, its
 deep links, and gives logs and SSH their target pickers.
 
-**Log viewer — ~1 week, lowest risk.** Loki is already on
+**Log viewer — implemented in the iOS app.** Loki is already on
 `192.168.0.203:3100` with `auth_enabled: false` and thirty-day retention. Alloy
 pushes container logs via `loki.source.docker`; there is no journal source, so
-host-level logs are not in Loki today and the viewer covers containers only
-until one is added. `/loki/api/v1/query_range` for history,
-`/loki/api/v1/tail` over `URLSessionWebSocketTask` for live tail. Label pickers
-over `{host=…, container=…}` beat a free-text LogQL box on a phone.
+host-level logs are not in Loki today. The Logs tab uses
+`/loki/api/v1/query_range` for history and `/loki/api/v1/tail` over
+`URLSessionWebSocketTask` for live tail. Alloy adds the canonical Friendly Name
+as the `host` label, and the app provides host and container pickers instead of
+a free-text LogQL box.
 
 **Metrics — ~1 week on top of Phase 5.** Extend the Prometheus client with
 native Swift Charts per-host and per-container views. The cheap alternative is

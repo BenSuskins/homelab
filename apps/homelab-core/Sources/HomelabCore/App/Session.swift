@@ -22,6 +22,7 @@ public final class Session {
     public private(set) var phase: Phase = .checking
     public private(set) var appState: AppState?
     public private(set) var healthMonitor: HealthMonitor
+    public private(set) var logMonitor: LogMonitor
 
     public let configuration: HomelabConfiguration
 
@@ -41,6 +42,7 @@ public final class Session {
         loginItem: any LoginItemControlling = UnsupportedLoginItemService(),
         writeAuthorisation: any WriteAuthorising = AlwaysAuthorised(),
         healthMonitor: HealthMonitor = HealthMonitor(),
+        logMonitor: LogMonitor = LogMonitor(),
         flow: DeviceFlow? = nil
     ) {
         self.configuration = configuration
@@ -50,6 +52,7 @@ public final class Session {
         self.loginItem = loginItem
         self.writeAuthorisation = writeAuthorisation
         self.healthMonitor = healthMonitor
+        self.logMonitor = logMonitor
         self.flow = flow ?? DeviceFlow(clientID: configuration.gitHubClientID)
     }
 

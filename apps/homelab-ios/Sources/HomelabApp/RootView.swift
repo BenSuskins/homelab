@@ -38,6 +38,9 @@ private struct SignedInView: View {
             Tab("Health", systemImage: "waveform.path.ecg") {
                 NavigationStack { HealthView() }
             }
+            Tab("Logs", systemImage: "doc.text.magnifyingglass") {
+                NavigationStack { LogsView() }
+            }
         }
         .environment(state)
         .task { state.start() }

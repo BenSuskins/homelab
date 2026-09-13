@@ -12,7 +12,7 @@ and a home-screen widget.
 │ ⏸ Terraform awaiting…    │   │ passed · 2h  │
 │ ◐ Clean     running 3m12s│■  └──────────────┘
 ├──────────────────────────┤
-│  Runs  · PRs · Health    │
+│  Runs · PRs · Health · Logs│
 └──────────────────────────┘
 ```
 
@@ -86,3 +86,10 @@ series are Remote-Written by Alloy and produce no `up`.
 
 GitHub and Prometheus are independent failure domains, so off the tailnet the
 Health tab alone says "not connected" and the other two keep working.
+
+## The Logs tab
+
+Reads container logs from Loki directly on `192.168.0.203:3100` over the
+tailnet. It supports a one-hour history by default, host and container filters,
+and an explicit live-tail mode. Loki receives the same Friendly Name `host`
+label that Prometheus uses. The viewer does not include host journal logs.

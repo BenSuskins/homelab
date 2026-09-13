@@ -133,6 +133,31 @@ struct HealthSnapshotTests {
     }
 }
 
+@Suite("Loki logs")
+struct LokiTests {
+    @Test("decodes streams into chronological log entries")
+    func decodesStreams() throws {
+        let entries = try LokiClient.decodeEntries(from: Data(Samples.lokiQuery.utf8))
+
+        #expect(entries.map(\.line) == ["started", "warning", "ready"])
+        #expect(entries.map(\.container) == ["api", "worker", "api"])
+        #expect(entries.map(\.host) == ["Docker", "Media", "Docker"])
+    }
+
+    @Test("builds a label selector from host and container")
+    func buildsSelector() {
+        #expect(LokiClient.selector(host: "Docker", container: "api") == "{host=\"Docker\", container=\"api\"}")
+        #expect(LokiClient.selector(host: nil, container: nil) == "{container=~\".+\"}")
+    }
+
+    @Test("decodes label values")
+    func decodesLabelValues() throws {
+        let values = try LokiClient.decodeLabelValues(from: Data(Samples.lokiLabelValues.utf8))
+
+        #expect(values == ["Docker", "Media"])
+    }
+}
+
 /// A `URLProtocol` that answers every request from a canned string, so the
 /// client's real `URLSession` path is what runs.
 final class StubURLProtocol: URLProtocol, @unchecked Sendable {

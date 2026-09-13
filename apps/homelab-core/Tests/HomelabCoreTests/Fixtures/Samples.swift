@@ -112,4 +112,27 @@ enum Samples {
     static let prometheusError = """
     { "status": "error", "errorType": "bad_data", "error": "parse error at char 1" }
     """
+
+    static let lokiQuery = """
+    {
+      "status": "success",
+      "data": {
+        "resultType": "streams",
+        "result": [
+          {
+            "stream": {"host": "Docker", "container": "api"},
+            "values": [["1757779200000000000", "started"], ["1757779260000000000", "ready"]]
+          },
+          {
+            "stream": {"host": "Media", "container": "worker"},
+            "values": [["1757779230000000000", "warning"]]
+          }
+        ]
+      }
+    }
+    """
+
+    static let lokiLabelValues = """
+    {"status":"success","data":["Media","Docker"]}
+    """
 }

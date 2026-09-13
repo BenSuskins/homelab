@@ -58,7 +58,8 @@
         endpoint {
           url = "http://{{ monitor_ip }}:3100/loki/api/v1/push"
         }
-        external_labels = {}
+        // Keep the same Friendly Name used by Prometheus and the Health tab.
+        external_labels = { host = "{{ friendly_name }}" }
       }
 
       // Container metrics (replaces cadvisor)
