@@ -1,3 +1,4 @@
+import HomelabCore
 import SwiftUI
 
 public struct MenuView: View {

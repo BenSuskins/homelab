@@ -1,5 +1,5 @@
 {
-  description = "Ansible development environment";
+  description = "Homelab development environment: Ansible, and the apps in apps/";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
@@ -14,9 +14,12 @@
         ansible-lint 
         python3  
         python3Packages.pip  
+        # apps/homelab-ios has no committed .xcodeproj; it is generated from
+        # project.yml. Swift and xcodebuild come from Xcode, not from here.
+        xcodegen
       ];
       shellHook = ''
-        echo "Ansible dev shell ready!"
+        echo "Homelab dev shell ready (ansible, xcodegen)."
       '';
     };
   };

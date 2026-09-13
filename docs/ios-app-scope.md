@@ -1,8 +1,8 @@
 # iOS companion app: scope
 
-> Scoping document, not a decision record. The two decisions this exercise
-> settled are written up as ADR-0004 and ADR-0005; everything else here is a
-> plan that expects to be argued with.
+> **Status: built.** Phases 0–7 landed together. This is kept as the reasoning
+> behind the shape of `apps/`, and for the roadmap past v1 at the end, which is
+> not built. The two decisions it settled are ADR-0004 and ADR-0005.
 
 `apps/homelab-menubar/` drives this repository's three Dispatchable Workflows,
 lists and squash-merges open pull requests, and links out to Homepage. This
@@ -58,13 +58,15 @@ with no change to the domain types or the tests that cover them.
 
 ## Sequence
 
-Eight phases, one pull request each. Phases 0 and 1 must be indistinguishable
-from `main` when you run the macOS app.
+Eight phases. They were planned as one pull request each and delivered as one;
+the phase boundaries survive as the order to read the diff in. Phases 0 and 1
+must be indistinguishable from `main` when you run the macOS app.
 
 ### Phase 0 — extract `apps/homelab-core/`
 
 A new SwiftPM package, `platforms: [.macOS(.v15), .iOS(.v18)]`, exposing target
-`HomelabCore`: `Domain/`, `GitHub/`, `MenuSnapshot.swift`,
+`HomelabCore`: `Domain/`, `GitHub/`, `StatusSnapshot.swift` (renamed from
+`MenuSnapshot.swift`, since it is no longer a menu's),
 `PollingSchedule.swift`, `RunStatusPresentation.swift`, `SnapshotCache.swift`,
 `RelativeTime.swift`, and `AppState{,+Refresh,+Actions}.swift`.
 
@@ -72,12 +74,13 @@ A new SwiftPM package, `platforms: [.macOS(.v15), .iOS(.v18)]`, exposing target
 the three menu views, `SettingsView`, `LoginItemService`,
 `AppState+LaunchAtLogin`, `GitHubCommandLineRunner` — depending on the core by
 relative path. Tests split the same way: `AppStateTests`, `GitHubClientTests`,
-`MenuSnapshotTests`, `Fixtures/Samples.swift` and `FakeCommandRunner` move;
-`LaunchAtLoginTests`, `FakeLoginItemService` and the contract tests stay, because
-the contract tests run real `gh`.
+`StatusSnapshotTests`, `Fixtures/Samples.swift`, `LaunchAtLoginTests` and
+`FakeLoginItemService` move — the launch-at-login *logic* is platform-neutral,
+only `SMAppService` is not. `FakeCommandRunner` and the contract tests stay,
+because the contract tests run real `gh`.
 
 Members that now cross a module boundary become `public` — chiefly `AppState`'s
-`internal(set)` properties and the `markBusy`/`setErrorMessage` helpers.
+`internal(set)` properties and the `client`/`cache`/`notifier` dependencies.
 
 Done when `make test` and `make bundle` behave exactly as they do today. No
 behaviour change is the whole point of doing it as its own pull request.
@@ -116,8 +119,9 @@ transport supplied the text.
 
 XcodeGen, with `apps/homelab-ios/project.yml` checked in and no `.xcodeproj`:
 the app target, the widget extension, the App Group, and the local package
-dependency. Add `xcodegen` to `flake.nix`; add `ios-generate`, `ios-test` and
-`ios-build` to the Makefile.
+dependency. Add `xcodegen` to `flake.nix`; add `ios-generate` and `ios-build` to
+the Makefile. There is no `ios-test`: every testable decision is in
+`HomelabCore`, so a clean compile is what the iOS target has to prove.
 
 Add `.github/workflows/apps.yml` on `paths: ['apps/**']`, `runs-on: macos-15` —
 the mirror image of the `paths-ignore` blocks ADR-0003 describes. Nothing builds
@@ -144,8 +148,8 @@ ADR-0004 for why, and for the scope caveat.
 Three tabs over the same `AppState`. Runs (the three Run Rows, with
 `RunStatusPresentation` already supplying symbol, tint and label, so the row is
 a layout exercise rather than a logic one), Pull Requests
-(swipe-to-squash-merge, `canMerge` gating unchanged), and Links via
-`SFSafariViewController`.
+(swipe-to-squash-merge, `canMerge` gating unchanged), and Health. The quick
+links sit in a section of the Runs tab rather than a tab of their own.
 
 Two lifecycle differences need handling rather than hoping:
 

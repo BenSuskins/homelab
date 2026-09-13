@@ -1,16 +1,18 @@
 import Foundation
+import HomelabCore
 import Testing
 @testable import HomelabMenuBarCore
 
-/// The fakes above assert that our code handles `gh` output correctly. These
-/// assert that `gh` still *produces* that output — the one thing a fake can
-/// never tell us. Strictly read-only: no dispatch, no cancel, no merge.
+/// The fakes in `HomelabCore` assert that our code handles GitHub's output
+/// correctly. These assert that `gh` still *produces* that output — the one
+/// thing a fake can never tell us. Strictly read-only: no dispatch, no cancel,
+/// no merge.
 ///
 /// Run with: `swift test --filter Contract`
 @Suite("Contract (real gh, read-only)", .tags(.contract))
 struct ContractTests {
     private var client: GitHubClient {
-        GitHubClient(runner: GitHubCommandLineRunner(), repository: .homelab)
+        GitHubClient(transport: GhCommandTransport(), repository: .homelab)
     }
 
     @Test("gh is installed and findable without a shell PATH")
@@ -38,7 +40,10 @@ struct ContractTests {
         }
     }
 
-    @Test("gh pr list still emits the JSON fields we ask for")
+    /// The one that would have caught the REST/GraphQL trap: `mergeable` is not
+    /// on REST's `/pulls` list endpoint at all, so this asserts both that `gh
+    /// api graphql` still works and that the field is still being returned.
+    @Test("the GraphQL pull request query still returns the fields we decode")
     func pullRequestShapeIsStable() async throws {
         let pullRequests = try await client.openPullRequests()
 
@@ -47,8 +52,15 @@ struct ContractTests {
             #expect(!pullRequest.title.isEmpty)
             #expect(pullRequest.url.absoluteString.contains("/pull/"))
             #expect(!pullRequest.authorLogin.isEmpty)
+            // `.unknown` means GitHub answered with something outside the
+            // MERGEABLE/CONFLICTING/UNKNOWN set we map, or stopped answering.
+            #expect(MergeReadiness.allExpected.contains(pullRequest.readiness))
         }
     }
+}
+
+extension MergeReadiness {
+    static let allExpected: [MergeReadiness] = [.mergeable, .conflicting, .unknown]
 }
 
 extension Tag {

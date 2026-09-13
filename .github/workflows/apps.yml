@@ -1,0 +1,66 @@
+name: Apps
+
+# The mirror image of the `paths-ignore: ['apps/**']` blocks on `update.yml`
+# and `build-mcp-arr.yml` (see ADR-0003). Those stop Swift commits deploying
+# Ansible to six hosts; this is the half that actually checks the Swift.
+#
+# It cannot run on the `self-hosted` runner, which is Linux.
+on:
+  push:
+    branches: [main]
+    paths: ['apps/**', '.github/workflows/apps.yml']
+  pull_request:
+    paths: ['apps/**', '.github/workflows/apps.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: apps-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Select Xcode
+        run: sudo xcode-select -switch /Applications/Xcode_16.app
+
+      # The shared package holds every testable decision in both apps, so this
+      # is the job that matters.
+      - name: Test HomelabCore
+        working-directory: apps/homelab-core
+        run: swift test
+
+      # Contract tests are excluded by name: they run the real `gh` against the
+      # live repository, which is not something CI should depend on.
+      - name: Test the menu bar app
+        working-directory: apps/homelab-menubar
+        run: swift test --skip Contract
+
+      - name: Build the menu bar app
+        working-directory: apps/homelab-menubar
+        run: swift build -c release --product HomelabMenuBar
+
+  ios:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Select Xcode
+        run: sudo xcode-select -switch /Applications/Xcode_16.app
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      # No test step: the iOS target is views and wiring over HomelabCore,
+      # which the job above covers. A clean compile is what there is to prove.
+      - name: Build for the simulator
+        working-directory: apps/homelab-ios
+        run: |
+          xcodegen generate
+          xcodebuild build \
+            -project Homelab.xcodeproj \
+            -scheme Homelab \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            CODE_SIGNING_ALLOWED=NO

@@ -1,4 +1,5 @@
 import Foundation
+import HomelabCore
 @testable import HomelabMenuBarCore
 
 /// Stands in for `gh`. It records what was asked and replies with canned bytes,

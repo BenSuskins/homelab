@@ -1,9 +1,18 @@
+import HomelabCore
 import HomelabMenuBarCore
 import SwiftUI
 
 @main
 struct HomelabMenuBarApp: App {
-    @State private var state = AppState(client: GitHubClient(runner: GitHubCommandLineRunner()))
+    /// `GhCommandTransport` is what keeps this app's original property intact:
+    /// it holds no credential, and `gh auth login` is the whole of its
+    /// credential management. The iOS app cannot do this, which is why the
+    /// transport is a seam at all — see ADR-0004.
+    @State private var state = AppState(
+        client: GitHubClient(transport: GhCommandTransport()),
+        notifier: FailureNotifier(),
+        loginItem: LoginItemService()
+    )
 
     var body: some Scene {
         MenuBarExtra {

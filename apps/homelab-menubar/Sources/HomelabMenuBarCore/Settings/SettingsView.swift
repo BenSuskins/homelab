@@ -1,3 +1,4 @@
+import HomelabCore
 import SwiftUI
 
 /// The app's settings window. Sections are the extension point: a new group of

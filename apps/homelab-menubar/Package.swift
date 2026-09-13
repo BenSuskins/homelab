@@ -4,9 +4,13 @@ import PackageDescription
 let package = Package(
     name: "HomelabMenuBar",
     platforms: [.macOS(.v15)],
+    dependencies: [
+        .package(path: "../homelab-core"),
+    ],
     targets: [
         .target(
             name: "HomelabMenuBarCore",
+            dependencies: [.product(name: "HomelabCore", package: "homelab-core")],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
         .executableTarget(
