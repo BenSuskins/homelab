@@ -50,10 +50,10 @@
 		19EC8964D626BCD3CC42EAEB /* HomelabApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomelabApp.swift; sourceTree = "<group>"; };
 		32ED3A9AC7D6378332669C7D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		542F10223BDBCDEB406B4DE7 /* HomelabApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HomelabApp.entitlements; sourceTree = "<group>"; };
-		594FFBC4847918D24EEBAB60 /* HomelabApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = HomelabApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		594FFBC4847918D24EEBAB60 /* Homelab.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Homelab.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7177A30531B54ABAF648B74F /* HealthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthView.swift; sourceTree = "<group>"; };
 		731958831B9B633EB7054215 /* BiometricWriteAuthorisation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricWriteAuthorisation.swift; sourceTree = "<group>"; };
-		7CFB96D029BCCA6191D25A4C /* HomelabWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = HomelabWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		7CFB96D029BCCA6191D25A4C /* HomelabWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HomelabWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		A05C5B72EFC5C657A0A935D1 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
 		A54BA803DDC07167998D5FB7 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		B311B40B03C7E98009525D02 /* HomelabWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HomelabWidget.entitlements; sourceTree = "<group>"; };
@@ -137,7 +137,7 @@
 		E163496F466E06D0E015E1FD /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				594FFBC4847918D24EEBAB60 /* HomelabApp.app */,
+				594FFBC4847918D24EEBAB60 /* Homelab.app */,
 				7CFB96D029BCCA6191D25A4C /* HomelabWidget.appex */,
 			);
 			name = Products;
@@ -164,7 +164,7 @@
 				BF9F2C480EDC92B38EA01F0C /* HomelabCore */,
 			);
 			productName = HomelabApp;
-			productReference = 594FFBC4847918D24EEBAB60 /* HomelabApp.app */;
+			productReference = 594FFBC4847918D24EEBAB60 /* Homelab.app */;
 			productType = "com.apple.product-type.application";
 		};
 		DB04D1E0B0F68207C821D26D /* HomelabWidget */ = {
@@ -266,6 +266,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Sources/HomelabApp/HomelabApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = PF88YZ2HU7;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = Sources/HomelabApp/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -414,6 +415,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Sources/HomelabApp/HomelabApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = PF88YZ2HU7;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = Sources/HomelabApp/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -431,6 +433,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = Sources/HomelabWidget/HomelabWidget.entitlements;
+				DEVELOPMENT_TEAM = PF88YZ2HU7;
 				INFOPLIST_FILE = Sources/HomelabWidget/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -448,6 +451,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = Sources/HomelabWidget/HomelabWidget.entitlements;
+				DEVELOPMENT_TEAM = PF88YZ2HU7;
 				INFOPLIST_FILE = Sources/HomelabWidget/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
