@@ -2,15 +2,11 @@ import Foundation
 import Testing
 @testable import HomelabCore
 
-/// `.serialized` for the same reason as the other Prometheus suite:
-/// `StubURLProtocol` holds its canned response in static storage.
-@Suite("Prometheus range queries", .serialized)
+@Suite("Prometheus range queries")
 struct PrometheusRangeTests {
     private func client(responding body: String, status: Int = 200) -> PrometheusClient {
-        PrometheusClient(
-            baseURL: URL(string: "http://prometheus.test:9090")!,
-            session: StubURLProtocol.session(body: body, status: status)
-        )
+        let stub = StubURLProtocol.stub(body: body, status: status)
+        return PrometheusClient(baseURL: stub.url, session: stub.session)
     }
 
     @Test("decodes a matrix into one series per label set")

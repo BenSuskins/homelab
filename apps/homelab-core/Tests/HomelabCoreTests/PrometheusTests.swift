@@ -2,20 +2,18 @@ import Foundation
 import Testing
 @testable import HomelabCore
 
-/// `.serialized` for the same reason as the device flow suite: `StubURLProtocol`
-/// holds its canned response in static storage, so two tests running at once
-/// would answer each other's requests.
-@Suite("Prometheus decoding", .serialized)
+@Suite("Prometheus decoding")
 struct PrometheusDecodingTests {
     /// The decoding is exercised through a stubbed `URLProtocol` rather than a
     /// faked client, because the awkward part is the wire format itself: a
     /// sample is `[<unix seconds>, "<value as a string>"]`, a heterogeneous
     /// array that no synthesised `Decodable` will handle.
+    ///
+    /// No `.serialized` trait: each stub owns a host, so nothing is shared for
+    /// a parallel test to trample.
     private func client(responding body: String, status: Int = 200) -> PrometheusClient {
-        PrometheusClient(
-            baseURL: URL(string: "http://prometheus.test:9090")!,
-            session: StubURLProtocol.session(body: body, status: status)
-        )
+        let stub = StubURLProtocol.stub(body: body, status: status)
+        return PrometheusClient(baseURL: stub.url, session: stub.session)
     }
 
     @Test("decodes a vector, including the string-encoded value")
@@ -38,10 +36,8 @@ struct PrometheusDecodingTests {
 
     @Test("an unreachable Prometheus is its own failure, not a generic one")
     func unreachableIsDistinct() async {
-        let client = PrometheusClient(
-            baseURL: URL(string: "http://prometheus.test:9090")!,
-            session: StubURLProtocol.failingSession()
-        )
+        let stub = StubURLProtocol.failing()
+        let client = PrometheusClient(baseURL: stub.url, session: stub.session)
 
         do {
             _ = try await client.instantQuery("up")
@@ -158,29 +154,47 @@ struct LokiTests {
     }
 }
 
-/// A `URLProtocol` that answers every request from a canned string, so the
-/// client's real `URLSession` path is what runs.
+/// A `URLProtocol` that answers every request from a canned string.
+///
+/// Each stub mints a host of its own and registers its response under it, so
+/// two suites running at the same time cannot answer each other's requests.
+/// It held one static response until there was a second Prometheus suite, at
+/// which point `.serialized` stopped being enough: that trait orders the tests
+/// *within* a suite, and the suites themselves still ran in parallel.
 final class StubURLProtocol: URLProtocol, @unchecked Sendable {
-    nonisolated(unsafe) static var body: String = "{}"
-    nonisolated(unsafe) static var status: Int = 200
-    nonisolated(unsafe) static var shouldFail = false
-
-    static func session(body: String, status: Int) -> URLSession {
-        Self.body = body
-        Self.status = status
-        Self.shouldFail = false
-        return makeSession()
+    struct Stubbed {
+        let url: URL
+        let session: URLSession
     }
 
-    static func failingSession() -> URLSession {
-        Self.shouldFail = true
-        return makeSession()
+    private struct Response {
+        let body: String
+        let status: Int
+        let shouldFail: Bool
     }
 
-    private static func makeSession() -> URLSession {
+    private static let lock = NSLock()
+    nonisolated(unsafe) private static var responses: [String: Response] = [:]
+
+    static func stub(body: String, status: Int = 200) -> Stubbed {
+        register(Response(body: body, status: status, shouldFail: false))
+    }
+
+    static func failing() -> Stubbed {
+        register(Response(body: "", status: 0, shouldFail: true))
+    }
+
+    private static func register(_ response: Response) -> Stubbed {
+        let host = "stub-\(UUID().uuidString.lowercased()).test"
+        lock.withLock { responses[host] = response }
+
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [StubURLProtocol.self]
-        return URLSession(configuration: configuration)
+
+        return Stubbed(
+            url: URL(string: "http://\(host):9090")!,
+            session: URLSession(configuration: configuration)
+        )
     }
 
     override class func canInit(with request: URLRequest) -> Bool { true }
@@ -188,19 +202,27 @@ final class StubURLProtocol: URLProtocol, @unchecked Sendable {
     override func stopLoading() {}
 
     override func startLoading() {
-        if Self.shouldFail {
+        let host = request.url?.host ?? ""
+        guard let response = Self.lock.withLock({ Self.responses[host] }) else {
+            // An unregistered host is a test wiring mistake, not a network
+            // condition, so it fails loudly rather than looking like an outage.
+            client?.urlProtocol(self, didFailWithError: URLError(.badURL))
+            return
+        }
+
+        if response.shouldFail {
             client?.urlProtocol(self, didFailWithError: URLError(.cannotConnectToHost))
             return
         }
 
-        let response = HTTPURLResponse(
+        let http = HTTPURLResponse(
             url: request.url!,
-            statusCode: Self.status,
+            statusCode: response.status,
             httpVersion: nil,
             headerFields: nil
         )!
-        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-        client?.urlProtocol(self, didLoad: Data(Self.body.utf8))
+        client?.urlProtocol(self, didReceive: http, cacheStoragePolicy: .notAllowed)
+        client?.urlProtocol(self, didLoad: Data(response.body.utf8))
         client?.urlProtocolDidFinishLoading(self)
     }
 }
