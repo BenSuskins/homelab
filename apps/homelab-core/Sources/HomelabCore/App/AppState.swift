@@ -5,6 +5,11 @@ import Observation
 @Observable
 public final class AppState {
     public internal(set) var snapshot: StatusSnapshot
+    /// The past, beside the present: the last several runs of each workflow.
+    /// Kept off `StatusSnapshot` deliberately — that value is cached for the
+    /// widget and shared with macOS, and a widget has no use for twenty runs it
+    /// will never draw.
+    public internal(set) var history = ActivityHistory()
     public internal(set) var isRefreshing = false
     /// The last failure as a value, not as its rendered message. The snapshot
     /// carries `errorMessage` for display; this is what code branches on, so
@@ -27,6 +32,10 @@ public final class AppState {
     public let launchAtLoginPreference: LaunchAtLoginPreference
     public let writeAuthorisation: any WriteAuthorising
     var pollingTask: Task<Void, Never>?
+    /// When the deep page of runs was last fetched. A poll during an active run
+    /// comes round every ten seconds and history does not change that fast, so
+    /// most passes ask for one run rather than twenty.
+    var historyRefreshedAt: Date?
 
     public init(
         client: GitHubClient,
@@ -63,6 +72,19 @@ public final class AppState {
 
     public func isBusy(pullRequest number: Int) -> Bool {
         busyPullRequests.contains(number)
+    }
+
+    /// Pull requests worth acting on, newest first: the ones GitHub says will
+    /// merge cleanly. Drafts and conflicts stay in the list, just not here.
+    public var mergeablePullRequests: [PullRequestSummary] {
+        snapshot.pullRequests.filter(\.canMerge)
+    }
+
+    /// Named `runHistory` rather than overloading `history`, which is the
+    /// property right above it — a method and a property sharing a base name is
+    /// legal and reads like a mistake.
+    public func runHistory(for workflow: DispatchableWorkflow) -> RunHistory? {
+        history.history(for: workflow)
     }
 
     /// Exposed so a view can replace a stale snapshot (a widget handing one

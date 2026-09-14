@@ -14,21 +14,52 @@ public struct GitHubClient: Sendable {
     public func latestRun(
         for workflow: DispatchableWorkflow
     ) async throws(GitHubFailure) -> WorkflowRunSummary? {
+        try await recentRuns(for: workflow, limit: 1).first
+    }
+
+    /// The same endpoint as `latestRun`, asked for a page instead of a row.
+    ///
+    /// One request answers both questions — what is it doing now, and what has
+    /// it been doing — so adding history to the app cost no extra calls against
+    /// the rate limit, only a larger page. The default is deliberately modest:
+    /// twenty runs is several weeks of Terraform and a few days of Update,
+    /// which is as far back as anything on screen looks.
+    public func recentRuns(
+        for workflow: DispatchableWorkflow,
+        limit: Int = 20
+    ) async throws(GitHubFailure) -> [WorkflowRunSummary] {
         let data = try await transport.send(.get(
             "repos/\(repository.slug)/actions/workflows/\(workflow.fileName)/runs"
-                + "?per_page=1&branch=\(repository.defaultBranch)"
+                + "?per_page=\(max(1, limit))&branch=\(repository.defaultBranch)"
         ))
 
         let payload = try decode(WorkflowRunListPayload.self, from: data)
-        guard let run = payload.workflowRuns.first else { return nil }
+        return payload.workflowRuns.map { run in
+            let status = RunStatus(status: run.status, conclusion: run.conclusion)
+            return WorkflowRunSummary(
+                identifier: run.identifier,
+                status: status,
+                url: run.url,
+                startedAt: run.startedAt,
+                // GitHub keeps stamping `updated_at` on a run that has not
+                // finished, so it is only an end time once there is a verdict.
+                finishedAt: status.isOpen ? nil : run.updatedAt
+            )
+        }
+    }
 
-        let status = RunStatus(status: run.status, conclusion: run.conclusion)
-        return WorkflowRunSummary(
-            identifier: run.identifier,
-            status: status,
-            url: run.url,
-            startedAt: run.startedAt,
-            finishedAt: status.isOpen ? nil : run.updatedAt
+    /// Who the token belongs to. Read once at sign-in for the profile button —
+    /// it is the only thing in the app that needs to know, and an avatar in the
+    /// corner is the honest answer to "which account is this phone acting as".
+    public func viewer() async throws(GitHubFailure) -> GitHubViewer {
+        let data = try await transport.send(.get("user"))
+        let payload = try decode(ViewerPayload.self, from: data)
+
+        return GitHubViewer(
+            login: payload.login,
+            name: payload.name,
+            avatarURL: payload.avatarURL,
+            profileURL: payload.profileURL
         )
     }
 

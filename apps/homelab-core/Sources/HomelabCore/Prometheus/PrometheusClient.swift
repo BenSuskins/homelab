@@ -59,11 +59,72 @@ public struct PrometheusClient: Sendable {
     }
 
     public func instantQuery(_ query: String) async throws(PrometheusFailure) -> [PrometheusSample] {
+        let data = try await get(
+            path: "api/v1/query",
+            items: [URLQueryItem(name: "query", value: query)]
+        )
+        let payload = try decode(data)
+
+        return payload.data?.result.compactMap { series -> PrometheusSample? in
+            guard let value = series.sampleValue else { return nil }
+            return PrometheusSample(labels: series.metric, value: value)
+        } ?? []
+    }
+
+    /// The history behind an instant query. Same labels, a line instead of a
+    /// number — this is what every chart in the app is drawn from.
+    ///
+    /// `start` and `end` are sent as Unix seconds because Prometheus accepts
+    /// RFC 3339 only with a timezone Foundation's default formatter does not
+    /// always spell the way it wants; seconds are unambiguous.
+    public func rangeQuery(
+        _ query: String,
+        start: Date,
+        end: Date = Date(),
+        step: TimeInterval
+    ) async throws(PrometheusFailure) -> [MetricSeries] {
+        let data = try await get(
+            path: "api/v1/query_range",
+            items: [
+                URLQueryItem(name: "query", value: query),
+                URLQueryItem(name: "start", value: Self.seconds(start)),
+                URLQueryItem(name: "end", value: Self.seconds(end)),
+                URLQueryItem(name: "step", value: String(Int(step.rounded()))),
+            ]
+        )
+        let payload = try decode(data)
+
+        return payload.data?.result.map {
+            MetricSeries(labels: $0.metric, points: $0.seriesPoints)
+        } ?? []
+    }
+
+    /// `rangeQuery` over a `MetricWindow`, which is how every caller in the app
+    /// asks — the window owns its own step so no screen has to pick one.
+    public func rangeQuery(
+        _ query: String,
+        window: MetricWindow,
+        now: Date = Date()
+    ) async throws(PrometheusFailure) -> [MetricSeries] {
+        try await rangeQuery(
+            query,
+            start: now.addingTimeInterval(-window.duration),
+            end: now,
+            step: window.step
+        )
+    }
+
+    // MARK: Plumbing
+
+    private func get(
+        path: String,
+        items: [URLQueryItem]
+    ) async throws(PrometheusFailure) -> Data {
         var components = URLComponents(
-            url: baseURL.appendingPathComponent("api/v1/query"),
+            url: baseURL.appendingPathComponent(path),
             resolvingAgainstBaseURL: false
         )
-        components?.queryItems = [URLQueryItem(name: "query", value: query)]
+        components?.queryItems = items
 
         guard let url = components?.url else {
             throw .malformedResponse("Could not build query URL")
@@ -81,6 +142,10 @@ public struct PrometheusClient: Sendable {
             throw .queryRejected("HTTP \(http.statusCode)")
         }
 
+        return data
+    }
+
+    private func decode(_ data: Data) throws(PrometheusFailure) -> QueryPayload {
         let payload: QueryPayload
         do {
             payload = try JSONDecoder().decode(QueryPayload.self, from: data)
@@ -92,9 +157,11 @@ public struct PrometheusClient: Sendable {
             throw .queryRejected(payload.error ?? "Prometheus reported \(payload.status)")
         }
 
-        return payload.data?.result.map {
-            PrometheusSample(labels: $0.metric, value: $0.sampleValue)
-        } ?? []
+        return payload
+    }
+
+    private static func seconds(_ date: Date) -> String {
+        String(Int(date.timeIntervalSince1970.rounded()))
     }
 
     // MARK: Wire shapes
@@ -110,26 +177,56 @@ public struct PrometheusClient: Sendable {
     }
 
     /// Prometheus encodes a sample as `[<unix seconds>, "<value as string>"]` —
-    /// a heterogeneous array, so it needs unkeyed decoding by hand.
+    /// a heterogeneous array, so it needs unkeyed decoding by hand. A vector
+    /// carries one under `value`; a matrix carries many under `values`. One
+    /// type decodes both so the two query paths share a payload.
     private struct Series: Decodable {
         let metric: [String: String]
-        let sampleValue: Double
+        /// Nil when the sample is NaN, which Prometheus sends as the literal
+        /// "NaN" and which means "not reporting", not "zero".
+        let sampleValue: Double?
+        let seriesPoints: [MetricPoint]
 
         enum CodingKeys: String, CodingKey {
             case metric
             case value
+            case values
         }
 
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             metric = try container.decodeIfPresent([String: String].self, forKey: .metric) ?? [:]
 
-            var pair = try container.nestedUnkeyedContainer(forKey: .value)
-            _ = try pair.decode(Double.self)
+            if container.contains(.value) {
+                var pair = try container.nestedUnkeyedContainer(forKey: .value)
+                sampleValue = try Self.decodePoint(&pair).map(\.value)
+            } else {
+                sampleValue = nil
+            }
+
+            if container.contains(.values) {
+                var rows = try container.nestedUnkeyedContainer(forKey: .values)
+                var points: [MetricPoint] = []
+                while !rows.isAtEnd {
+                    var pair = try rows.nestedUnkeyedContainer()
+                    // A NaN in the middle of a line is a gap. Dropping the
+                    // point leaves the chart's own interpolation to show it,
+                    // rather than a spike to zero that reads as a real reading.
+                    if let point = try Self.decodePoint(&pair) { points.append(point) }
+                }
+                seriesPoints = points
+            } else {
+                seriesPoints = []
+            }
+        }
+
+        private static func decodePoint(
+            _ pair: inout UnkeyedDecodingContainer
+        ) throws -> MetricPoint? {
+            let timestamp = try pair.decode(Double.self)
             let raw = try pair.decode(String.self)
-            // NaN arrives as the literal "NaN"; treat it as absent data rather
-            // than failing the whole query.
-            sampleValue = Double(raw) ?? .nan
+            guard let value = Double(raw), value.isFinite else { return nil }
+            return MetricPoint(date: Date(timeIntervalSince1970: timestamp), value: value)
         }
     }
 }

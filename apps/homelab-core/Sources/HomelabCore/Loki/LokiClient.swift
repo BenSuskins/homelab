@@ -32,10 +32,59 @@ public struct LokiLogEntry: Sendable, Equatable, Identifiable {
     public var host: String? { labels["host"] }
     public var container: String? { labels["container"] }
 
+    /// Read out of the line itself, because Alloy's `loki.source.docker` ships
+    /// container stdout verbatim: there is no level label to read, and every
+    /// container writes its own format. A cheap scan of the first few words is
+    /// wrong sometimes, which is why it only ever tints a line rather than
+    /// filtering one out.
+    public var level: LogLevel { LogLevel(line: line) }
+
     public init(timestamp: Date, labels: [String: String], line: String) {
         self.timestamp = timestamp
         self.labels = labels
         self.line = line
+    }
+}
+
+/// How loud a log line is. Deliberately coarse — three levels and a default —
+/// because the point is to make the red ones findable while scrolling, not to
+/// reproduce whatever taxonomy the container happens to use.
+public enum LogLevel: String, Sendable, Equatable, CaseIterable, Codable {
+    case error
+    case warning
+    case info
+    case debug
+
+    public init(line: String) {
+        // Only the start of the line: a line that merely mentions "error" in a
+        // URL or a payload is not an error line.
+        let head = line.prefix(90).lowercased()
+
+        if head.contains("error") || head.contains("fatal") || head.contains("panic")
+            || head.contains(" err ") || head.contains("level=error") {
+            self = .error
+        } else if head.contains("warn") || head.contains("level=warn") {
+            self = .warning
+        } else if head.contains("debug") || head.contains("level=debug") || head.contains("trace") {
+            self = .debug
+        } else {
+            self = .info
+        }
+    }
+
+    public var label: String {
+        switch self {
+        case .error: "ERR"
+        case .warning: "WARN"
+        case .info: "INFO"
+        case .debug: "DBG"
+        }
+    }
+
+    /// Whether the line is worth colouring at all. Info and debug are the
+    /// overwhelming majority and stay in the body colour.
+    public var isNotable: Bool {
+        self == .error || self == .warning
     }
 }
 

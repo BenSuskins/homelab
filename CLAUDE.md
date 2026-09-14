@@ -182,9 +182,9 @@ Renovate monitors `tasks/docker/*.yml` for Docker image versions and creates PRs
 
 Three Swift packages:
 
-- **`apps/homelab-core/`** — `HomelabCore`, shared by both apps: domain types, `GitHubClient`, `StatusSnapshot`, `AppState`, the polling schedule, and the Prometheus client. Every testable decision lives here. Nothing in it imports AppKit, `ServiceManagement` or `Process`.
+- **`apps/homelab-core/`** — `HomelabCore`, shared by both apps: domain types, `GitHubClient`, `StatusSnapshot`, `RunHistory`, `AppState`, the polling schedule, the Prometheus and Loki clients, and `Design/` (the `Palette` and type scale every surface draws from). Every testable decision lives here. Nothing in it imports AppKit, `ServiceManagement` or `Process`.
 - **`apps/homelab-menubar/`** — the macOS menu bar app: menu views, settings window, login item.
-- **`apps/homelab-ios/`** — the iOS app and its widget. `Homelab.xcodeproj` is committed and is the source of truth: Xcode Cloud (which deploys to TestFlight) discovers the project by scanning the repository, so a generated one is no use to it. Edit targets in Xcode, not in a spec file.
+- **`apps/homelab-ios/`** — the iOS app and its three widgets. `Homelab.xcodeproj` is committed and is the source of truth: Xcode Cloud (which deploys to TestFlight) discovers the project by scanning the repository, so a generated one is no use to it. Edit targets in Xcode, not in a spec file — and note the project has no file-system-synchronised groups, so a new source file must be added to both a `PBXGroup` and the target's `PBXSourcesBuildPhase` or it silently will not compile.
 
 From `apps/homelab-menubar/`: `make test` (both packages), `make bundle`, `make install`, `make ios-generate`, `make ios-build`.
 
@@ -194,7 +194,9 @@ All GitHub access goes through the `GitHubTransport` protocol, which is the only
 
 **`update.yml` and `build-mcp-arr.yml` carry `paths-ignore: ['apps/**']`.** Both trigger on every push to `main`; without those blocks a commit touching only Swift code runs Ansible against all six hosts. Do not remove them. `apps.yml` is the other half of that pair — it runs on `paths: ['apps/**']` and is the only workflow that builds or tests the Swift. It needs a GitHub-hosted macOS runner; the `self-hosted` one is Linux. See `docs/adr/0003-menu-bar-app-lives-in-this-repo.md`.
 
-`docs/ios-app-scope.md` is the plan the apps were built to, including the roadmap past v1 (service directory, log viewer, metrics, SSH).
+`docs/ios-app-scope.md` is the plan the apps were built to, including the roadmap past v1 (service directory, log viewer, metrics, SSH); the metrics and run-history entries are now built, the rest are not.
+
+The iOS app's visual language is the Grafana dashboards' — `Status → Topic → Detail`, the same threshold ladder, one accent reserved for interaction so colour otherwise means status. `docs/grafana-dashboard-style.md` is the reference for both; `apps/homelab-ios/README.md` says what each screen holds.
 
 ## Agent skills
 

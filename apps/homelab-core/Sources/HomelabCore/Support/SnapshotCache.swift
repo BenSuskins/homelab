@@ -41,7 +41,7 @@ public struct SnapshotCache: Sendable {
 
     public func load() -> StatusSnapshot? {
         guard let data = try? Data(contentsOf: fileURL) else { return nil }
-        return try? Self.decoder.decode(StatusSnapshot.self, from: data)
+        return try? JSONCoding.decoder.decode(StatusSnapshot.self, from: data)
     }
 
     public func save(_ snapshot: StatusSnapshot) {
@@ -50,19 +50,7 @@ public struct SnapshotCache: Sendable {
             at: directory,
             withIntermediateDirectories: true
         )
-        guard let data = try? Self.encoder.encode(snapshot) else { return }
+        guard let data = try? JSONCoding.encoder.encode(snapshot) else { return }
         try? data.write(to: fileURL, options: .atomic)
     }
-
-    private static let decoder: JSONDecoder = {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        return decoder
-    }()
-
-    private static let encoder: JSONEncoder = {
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        return encoder
-    }()
 }

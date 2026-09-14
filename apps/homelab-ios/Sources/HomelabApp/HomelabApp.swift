@@ -4,18 +4,43 @@ import WidgetKit
 
 @main
 struct HomelabApp: App {
-    @State private var session = Session(
-        configuration: .iOS,
-        tokens: KeychainTokenStore(
-            service: HomelabConfiguration.iOS.keychainService,
-            accessGroup: HomelabConfiguration.iOS.keychainAccessGroup
-        ),
-        cache: SnapshotCache(appGroup: HomelabConfiguration.iOS.appGroup ?? ""),
-        // No notifier: a suspended iOS app never sees the failure, so the
-        // widget is the ambient signal instead. See ADR-0005.
-        writeAuthorisation: BiometricWriteAuthorisation()
-    )
+    @State private var session: Session
     @Environment(\.scenePhase) private var scenePhase
+
+    /// Built in `init()` rather than as a default value on the property.
+    ///
+    /// The expression constructs three `@MainActor` types, one nested inside
+    /// another, and as a stored-property initializer that crashed the Swift
+    /// compiler outright — `swift-frontend` stack-dumped in SILGen, "While
+    /// silgen emitStoredPropertyInitialization ... variable initialization
+    /// expression of HomelabApp._session". There is no diagnostic to fix,
+    /// only a code path to avoid. An explicit initializer runs the same code
+    /// in the App's own `@MainActor` context and does not go near it.
+    init() {
+        _session = State(initialValue: Self.makeSession())
+    }
+
+    private static func makeSession() -> Session {
+        let appGroup = HomelabConfiguration.iOS.appGroup ?? ""
+
+        return Session(
+            configuration: .iOS,
+            tokens: KeychainTokenStore(
+                service: HomelabConfiguration.iOS.keychainService,
+                accessGroup: HomelabConfiguration.iOS.keychainAccessGroup
+            ),
+            cache: SnapshotCache(appGroup: appGroup),
+            // No notifier: a suspended iOS app never sees the failure, so the
+            // widgets are the ambient signal instead. See ADR-0005.
+            writeAuthorisation: BiometricWriteAuthorisation(),
+            // The health widget cannot reach Prometheus unless the phone
+            // happens to be on the tailnet when iOS decides to refresh it, so
+            // the app writes every reading it takes to the App Group and the
+            // widget falls back to that. It is then as fresh as your last
+            // visit, which is honest and is what the widget says on its face.
+            healthMonitor: HealthMonitor(cache: HealthCache(appGroup: appGroup))
+        )
+    }
 
     var body: some Scene {
         WindowGroup {

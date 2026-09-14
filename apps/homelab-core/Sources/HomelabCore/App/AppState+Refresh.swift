@@ -36,10 +36,23 @@ extension AppState {
         isRefreshing = true
         defer { isRefreshing = false }
 
+        let wantsHistory = Self.isHistoryStale(historyRefreshedAt)
+
         do {
-            let runs = try await fetchLatestRuns()
+            let histories = try await fetchRuns(limit: wantsHistory ? Self.historyDepth : 1)
             let pullRequests = try await client.openPullRequests()
             lastFailure = nil
+
+            if wantsHistory {
+                history = ActivityHistory(histories: histories, lastRefreshedAt: Date())
+                historyRefreshedAt = Date()
+            }
+
+            var runs: [DispatchableWorkflow: WorkflowRunSummary] = [:]
+            for entry in histories {
+                runs[entry.workflow] = entry.latest
+            }
+
             apply(
                 StatusSnapshot.make(
                     runs: runs,
@@ -54,14 +67,31 @@ extension AppState {
         }
     }
 
-    private func fetchLatestRuns() async throws(GitHubFailure) -> [DispatchableWorkflow: WorkflowRunSummary] {
-        var runs: [DispatchableWorkflow: WorkflowRunSummary] = [:]
+    /// Force the next refresh to fetch the deep page, whatever the clock says —
+    /// what pull-to-refresh means, and what a dispatch should do so the new run
+    /// appears in its own history rather than two minutes later.
+    public func invalidateHistory() {
+        historyRefreshedAt = nil
+    }
+
+    /// How many runs back each workflow's history reaches.
+    static let historyDepth = 20
+
+    /// Runs change every ten seconds while one is active; twenty of them do not.
+    static let historyInterval: TimeInterval = 120
+
+    static func isHistoryStale(_ refreshedAt: Date?, now: Date = Date()) -> Bool {
+        guard let refreshedAt else { return true }
+        return now.timeIntervalSince(refreshedAt) >= historyInterval
+    }
+
+    private func fetchRuns(limit: Int) async throws(GitHubFailure) -> [RunHistory] {
+        var histories: [RunHistory] = []
         for workflow in DispatchableWorkflow.allCases {
-            if let run = try await client.latestRun(for: workflow) {
-                runs[workflow] = run
-            }
+            let runs = try await client.recentRuns(for: workflow, limit: limit)
+            histories.append(RunHistory(workflow: workflow, runs: runs))
         }
-        return runs
+        return histories
     }
 
     private func apply(_ fresh: StatusSnapshot) {
