@@ -128,26 +128,12 @@ identity_providers:
           - code
         userinfo_signed_response_alg: none
 
-      - client_id: calibre-web
-        client_name: Calibre Web Automated
-        client_secret: '{{ AUTHELIA_OIDC_CALIBRE_SECRET }}'
-        public: false
-        authorization_policy: 'two_factor'
-        redirect_uris:
-          - 'https://calibre.{{ domain }}/login/generic/authorized'
-        scopes:
-          - 'openid'
-          - 'profile'
-          - 'email'
-          - 'groups'
-        response_types:
-          - 'code'
-        grant_types:
-          - 'authorization_code'
-        access_token_signed_response_alg: 'none'
-        userinfo_signed_response_alg: 'none'
-        token_endpoint_auth_method: 'client_secret_basic'
-
+      # Calibre-Web Automated deliberately has no client here. Its OPDS feed is
+      # what KOReader on the Kindle pulls from, and CWA rejects OPDS logins from
+      # OIDC-authenticated users (crocodilestick/Calibre-Web-Automated#1269), so
+      # the account the device uses has to be a local CWA one either way. Its
+      # service entry is `secured: false` for the same reason - Authelia
+      # forward-auth on the router would block those requests too.
       - client_id: gatus
         client_name: Gatus
         client_secret: '{{ AUTHELIA_OIDC_GATUS_SECRET }}'

@@ -21,3 +21,5 @@ containers:
   - metube
   - open-books
   - shelfmark
+  # Books
+  - calibre-web-automated
