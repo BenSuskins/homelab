@@ -199,6 +199,7 @@ struct GitHubFailureTests {
     func staysTransportNeutral() {
         for failure: GitHubFailure in [
             .notAuthenticated,
+            .credentialUnavailable,
             .requestFailed(status: 500, message: ""),
             .malformedResponse("x"),
             .transportUnavailable(""),
@@ -210,6 +211,9 @@ struct GitHubFailureTests {
     @Test("knows which failures mean sign in again")
     func identifiesReauthentication() {
         #expect(GitHubFailure.notAuthenticated.requiresReauthentication)
+        // A credential we cannot read is not a credential GitHub has rejected;
+        // signing out here deletes a working token.
+        #expect(GitHubFailure.credentialUnavailable.requiresReauthentication == false)
         #expect(GitHubFailure.requestFailed(status: 401, message: "").requiresReauthentication)
         #expect(GitHubFailure.requestFailed(status: 404, message: "").requiresReauthentication == false)
         #expect(GitHubFailure.transportUnavailable("offline").requiresReauthentication == false)

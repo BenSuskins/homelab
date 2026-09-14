@@ -19,7 +19,10 @@ public struct URLSessionTransport: GitHubTransport {
     }
 
     public func send(_ request: GitHubRequest) async throws(GitHubFailure) -> Data {
-        guard let token = await tokens.token() else { throw .notAuthenticated }
+        // Not `notAuthenticated`: the credential may well be there and simply
+        // unreadable because the device is locked. Signing out on that deletes
+        // a perfectly good token and makes the user enrol again.
+        guard let token = await tokens.token() else { throw .credentialUnavailable }
 
         let urlRequest: URLRequest
         do {
@@ -49,6 +52,8 @@ public struct URLSessionTransport: GitHubTransport {
             try Self.rejectGraphQLErrors(in: data, for: request)
             return data
         case 401:
+            // GitHub has seen the token and rejected it, which is the one
+            // case that genuinely means enrol again.
             throw .notAuthenticated
         default:
             throw .requestFailed(
