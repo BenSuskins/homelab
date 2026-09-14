@@ -56,19 +56,37 @@ jobs:
       # No test step: the iOS target is views and wiring over HomelabCore,
       # which the job above covers. A clean compile is what there is to prove.
       #
-      # `generic/platform=iOS Simulator` rather than a named device: this only
-      # ever compiles, and naming one ties the job to whichever simulators the
+      # A generic destination rather than a named device: this only ever
+      # compiles, and naming one ties the job to whichever simulators the
       # runner image happens to ship — which is how the first run of this
       # workflow failed, on a missing "iPhone 16", before building anything.
-      - name: Build for the simulator
+      #
+      # `generic/platform=iOS` — a device — rather than `iOS Simulator`,
+      # because the simulator SDK drags a second dependency on the image that
+      # a compile has no use for. Compiling the asset catalogue against the
+      # simulator SDK requires an *installed simulator runtime* of the same
+      # version, and Xcode 16.0's SDK is iOS 18.0 while macos-15 now ships
+      # nothing older than 18.5:
+      #
+      #     No simulator runtime version from [22F77, 22G86, 23A8464, 23B86,
+      #     23C54] available to use with iphonesimulator SDK version 22A3362
+      #
+      # That failed every run of this job from the day it was added. Building
+      # for a device needs no runtime at all, and with signing off it compiles
+      # exactly the same sources. The alternative — moving off Xcode 16.0 to
+      # match the image's runtimes — changes the compiler as well, which is a
+      # bigger change than this job wants.
+      - name: Build for iOS
         working-directory: apps/homelab-ios
         run: |
           xcodebuild build \
             -project Homelab.xcodeproj \
             -scheme Homelab \
-            -destination 'generic/platform=iOS Simulator' \
+            -destination 'generic/platform=iOS' \
             -resultBundlePath build.xcresult \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
 
       # xcodebuild batches Swift compiles, and when one fails it can report
       # nothing but "Command SwiftCompile failed with a nonzero exit code" —
