@@ -45,20 +45,30 @@ struct RunHistoryTests {
         #expect(RunHistory(workflow: .clean, runs: []).medianDuration == nil)
     }
 
+    // Durations are unwrapped and compared against a `Double` literal rather
+    // than written inline as `== 5 * 60`. An integer-literal arithmetic
+    // expression on the right of `#expect` is typed as `Int` independently of
+    // the optional `TimeInterval` on the left, and the comparison then fails
+    // while reporting two numbers that read as equal: `300.0 == 300`.
+    // Unwrapping first also separates "no median" from "the wrong median".
+
     @Test("takes the median duration, so one bad run does not move it")
-    func takesMedianDuration() {
+    func takesMedianDuration() throws {
         let history = RunHistory(workflow: .update, runs: [
             run(3, .succeeded, minutes: 4),
             run(2, .succeeded, minutes: 20),
             run(1, .succeeded, minutes: 5),
         ])
 
-        #expect(history.medianDuration == 5 * 60)
-        #expect(history.longestDuration == 20 * 60)
+        let median = try #require(history.medianDuration)
+        let longest = try #require(history.longestDuration)
+
+        #expect(median == 300.0)
+        #expect(longest == 1_200.0)
     }
 
     @Test("averages the middle pair when the count is even")
-    func medianOfEvenCount() {
+    func medianOfEvenCount() throws {
         let history = RunHistory(workflow: .update, runs: [
             run(4, .succeeded, minutes: 2),
             run(3, .succeeded, minutes: 4),
@@ -66,7 +76,9 @@ struct RunHistoryTests {
             run(1, .succeeded, minutes: 8),
         ])
 
-        #expect(history.medianDuration == 5 * 60)
+        let median = try #require(history.medianDuration)
+
+        #expect(median == 300.0)
     }
 
     @Test("charts oldest first, which is the direction a chart reads")
