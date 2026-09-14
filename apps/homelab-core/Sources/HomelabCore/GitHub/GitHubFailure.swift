@@ -7,8 +7,15 @@ public enum GitHubFailure: Error, Equatable, Sendable {
     /// The transport itself could not run — `gh` is not installed, or the
     /// device has no route to `api.github.com`.
     case transportUnavailable(String)
-    /// There is no credential, or the one we have has expired or been revoked.
+    /// GitHub rejected the credential: the grant has been revoked or expired,
+    /// and no amount of retrying will fix it.
     case notAuthenticated
+    /// We hold a credential but could not read it — the Keychain item is
+    /// `WhenUnlockedThisDeviceOnly`, so a read on a locked device returns
+    /// nothing. Deliberately distinct from `notAuthenticated`: conflating the
+    /// two made a locked phone look like a revoked grant, and the app deleted
+    /// its own token in response.
+    case credentialUnavailable
     case requestFailed(status: Int, message: String)
     case malformedResponse(String)
 
@@ -18,6 +25,8 @@ public enum GitHubFailure: Error, Equatable, Sendable {
             detail.isEmpty ? "Cannot reach GitHub" : detail
         case .notAuthenticated:
             "Not signed in to GitHub"
+        case .credentialUnavailable:
+            "Cannot read the saved sign-in — unlock the device"
         case .requestFailed(_, let message):
             message.isEmpty ? "GitHub rejected the request" : message
         case .malformedResponse:

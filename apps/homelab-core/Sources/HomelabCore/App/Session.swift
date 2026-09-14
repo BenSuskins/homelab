@@ -35,6 +35,9 @@ public final class Session {
     private let notifier: any FailureNotifying
     private let loginItem: any LoginItemControlling
     private let writeAuthorisation: any WriteAuthorising
+    /// Injected only by tests, which have no business reaching
+    /// `api.github.com`; production builds get `URLSessionTransport`.
+    private let transport: (any GitHubTransport)?
     private var pollingTask: Task<Void, Never>?
 
     public init(
@@ -46,7 +49,8 @@ public final class Session {
         writeAuthorisation: any WriteAuthorising = AlwaysAuthorised(),
         healthMonitor: HealthMonitor = HealthMonitor(),
         logMonitor: LogMonitor = LogMonitor(),
-        flow: DeviceFlow? = nil
+        flow: DeviceFlow? = nil,
+        transport: (any GitHubTransport)? = nil
     ) {
         self.configuration = configuration
         self.tokens = tokens
@@ -57,6 +61,7 @@ public final class Session {
         self.healthMonitor = healthMonitor
         self.logMonitor = logMonitor
         self.flow = flow ?? DeviceFlow(clientID: configuration.gitHubClientID)
+        self.transport = transport
     }
 
     public var isSignedIn: Bool {
@@ -115,13 +120,18 @@ public final class Session {
     /// A 401 mid-session means the grant was revoked on github.com. Drop
     /// straight back to sign-in rather than sitting behind a permanent error
     /// banner that no amount of retrying will clear.
+    ///
+    /// `credentialUnavailable` deliberately does *not* land here. The Keychain
+    /// item is `WhenUnlockedThisDeviceOnly`, so a poll that overlaps the screen
+    /// locking reads nothing — and signing out on that wipes the token, which
+    /// is why the app used to ask for a fresh sign-in roughly once a day.
     public func handleIfUnauthenticated(_ failure: GitHubFailure?) async {
         guard isSignedIn, failure?.requiresReauthentication == true else { return }
         await signOut()
     }
 
     private func activate() {
-        let client = GitHubClient(transport: URLSessionTransport(tokens: tokens))
+        let client = GitHubClient(transport: transport ?? URLSessionTransport(tokens: tokens))
         appState = AppState(
             client: client,
             cache: cache,
