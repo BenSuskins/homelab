@@ -10,6 +10,15 @@
   loop:
     - "{{ base_dir }}/calibre-web-automated"
 
+# CWA creates metadata.db but not the directory holding it, so the library root
+# has to exist before the container starts. No owner/group/mode here: this path
+# is on the CIFS mount, which is mounted uid=1000,gid=1000 and ignores chown and
+# chmod, so setting them would fail rather than do anything.
+- name: CALIBRE WEB AUTOMATED - Ensure library directory exists on the share
+  ansible.builtin.file:
+    path: /mnt/media/books/library
+    state: directory
+
 - name: CALIBRE WEB AUTOMATED - Pre-pull image
   community.docker.docker_image:
     name: "{{ image }}"
@@ -37,6 +46,12 @@
       TZ: "{{ timezone }}"
       PUID: "{{ puid | string }}"
       PGID: "{{ pgid | string }}"
+      # The Calibre library lives on the TrueNAS CIFS share, and SMB does not
+      # support the file locking SQLite's WAL mode needs - left on, it risks
+      # "database is locked" errors and eventual metadata.db corruption. This
+      # also swaps the inotify ingest watcher for polling, which is the only
+      # option over CIFS, at the cost of a few seconds' latency on new files.
+      NETWORK_SHARE_MODE: "true"
 
 - name: CALIBRE WEB AUTOMATED - Define service entry
   ansible.builtin.set_fact:
