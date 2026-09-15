@@ -9,15 +9,9 @@
     mode: "0750"
   loop:
     - "{{ base_dir }}/calibre-web-automated"
-
-# CWA creates metadata.db but not the directory holding it, so the library root
-# has to exist before the container starts. No owner/group/mode here: this path
-# is on the CIFS mount, which is mounted uid=1000,gid=1000 and ignores chown and
-# chmod, so setting them would fail rather than do anything.
-- name: CALIBRE WEB AUTOMATED - Ensure library directory exists on the share
-  ansible.builtin.file:
-    path: /mnt/media/books/library
-    state: directory
+    # CWA writes metadata.db but not the directory holding it, so the library
+    # root has to exist before the container starts.
+    - "{{ base_dir }}/calibre-web-automated/library"
 
 - name: CALIBRE WEB AUTOMATED - Pre-pull image
   community.docker.docker_image:
@@ -41,16 +35,21 @@
     volumes:
       - "{{ base_dir }}/calibre-web-automated:/config"
       - "/mnt/media/books/data:/cwa-book-ingest"
-      - "/mnt/media/books/library:/calibre-library"
+      # metadata.db is SQLite, and calibredb - which CWA shells out to on every
+      # ingest - does its own byte-range locking that CIFS cannot serve. On the
+      # share that failed as `apsw.BusyError: database is locked`, so no book was
+      # ever added. NETWORK_SHARE_MODE below does not reach that subprocess, so
+      # the library has to sit on a real POSIX filesystem; only the ingest folder
+      # stays on the NAS, where OpenBooks and Shelfmark write to it.
+      - "{{ base_dir }}/calibre-web-automated/library:/calibre-library"
     env:
       TZ: "{{ timezone }}"
       PUID: "{{ puid | string }}"
       PGID: "{{ pgid | string }}"
-      # The Calibre library lives on the TrueNAS CIFS share, and SMB does not
-      # support the file locking SQLite's WAL mode needs - left on, it risks
-      # "database is locked" errors and eventual metadata.db corruption. This
-      # also swaps the inotify ingest watcher for polling, which is the only
-      # option over CIFS, at the cost of a few seconds' latency on new files.
+      # The ingest folder is still on the TrueNAS CIFS share, where inotify
+      # cannot see writes reliably, and this is what switches the ingest watcher
+      # to polling. It also disables SQLite WAL, which is a small and acceptable
+      # cost now that the library itself is on local disk.
       NETWORK_SHARE_MODE: "true"
 
 - name: CALIBRE WEB AUTOMATED - Define service entry
