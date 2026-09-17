@@ -39,6 +39,16 @@ public enum DeviceFlowFailure: Error, Equatable, Sendable {
         case .server(let detail): detail
         }
     }
+
+    /// Whether retrying the same request could still succeed. Being suspended
+    /// mid-poll looks exactly like this, and so does a captive portal handing
+    /// back a page where JSON was expected.
+    public var isTransient: Bool {
+        switch self {
+        case .network, .malformedResponse: true
+        case .expired, .declinedByUser, .server: false
+        }
+    }
 }
 
 /// GitHub's OAuth device flow. Chosen over a pasted token because it needs no
@@ -88,35 +98,63 @@ public struct DeviceFlow: Sendable {
     /// Polls until GitHub says yes, no, or too late. `slow_down` is not an
     /// error — GitHub uses it to widen the interval mid-flow, and ignoring it
     /// gets the request rate-limited.
+    ///
+    /// A failed request is not the end of the flow. The whole point of the
+    /// device flow is that you leave for another app to type the code in, and
+    /// iOS suspends this one seconds after you do — which kills whichever poll
+    /// happened to be in flight and used to drop the user straight back to the
+    /// sign-in screen with "The network connection was lost". The grant is
+    /// still perfectly good at that moment, so a transport failure is reported
+    /// through `onTransientFailure` and retried until the grant itself expires.
+    /// - Parameter firstDelay: How long to wait before the *first* poll.
+    ///   GitHub's interval by default, because polling the instant the code is
+    ///   issued only earns a `slow_down`. Zero when picking a flow back up
+    ///   after the app returns to the foreground: by then the user has very
+    ///   likely just finished authorising, and another five seconds of spinner
+    ///   is the difference between "it worked" and "it cancelled my login".
     public func awaitToken(
         for grant: DeviceCodeGrant,
+        firstDelay: Duration? = nil,
+        onTransientFailure: @Sendable (DeviceFlowFailure) -> Void = { _ in },
         sleep: @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) }
     ) async throws(DeviceFlowFailure) -> String {
         var interval = grant.interval
+        var backoff = Duration.zero
+        var delay = firstDelay ?? grant.interval
 
         while true {
             if Date() >= grant.expiresAt { throw .expired }
 
             do {
-                try await sleep(interval)
+                try await sleep(delay)
             } catch {
+                // Only real cancellation reaches here: `cancelSignIn`, or the
+                // session going away. Either way there is nobody to poll for.
                 throw .network("Cancelled")
             }
 
-            let payload: AccessTokenPayload = try await post(
-                path: "login/oauth/access_token",
-                fields: [
-                    "client_id": clientID,
-                    "device_code": grant.deviceCode,
-                    "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
-                ]
-            )
+            let payload: AccessTokenPayload
+            switch await poll(grant) {
+            case .success(let value):
+                payload = value
+            case .failure(let failure):
+                guard failure.isTransient else { throw failure }
+                if Task.isCancelled { throw .network("Cancelled") }
+                onTransientFailure(failure)
+                // Widen, but never past half a minute: the user is sitting in
+                // front of the code waiting for the screen to change.
+                backoff = min(backoff + .seconds(2), .seconds(25))
+                delay = interval + backoff
+                continue
+            }
+
+            backoff = .zero
 
             if let token = payload.accessToken { return token }
 
             switch payload.error {
             case "authorization_pending", nil:
-                continue
+                break
             case "slow_down":
                 interval += .seconds(5)
             case "expired_token":
@@ -126,10 +164,33 @@ public struct DeviceFlow: Sendable {
             case .some(let other):
                 throw .server(payload.errorDescription ?? other)
             }
+
+            delay = interval
         }
     }
 
     // MARK: Plumbing
+
+    /// One poll, as a `Result`. A typed-throws `do`/`catch` would read better,
+    /// but the recovery here is "carry on round the loop" and that is a value,
+    /// not a control-flow exception.
+    private func poll(
+        _ grant: DeviceCodeGrant
+    ) async -> Result<AccessTokenPayload, DeviceFlowFailure> {
+        do {
+            let payload: AccessTokenPayload = try await post(
+                path: "login/oauth/access_token",
+                fields: [
+                    "client_id": clientID,
+                    "device_code": grant.deviceCode,
+                    "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
+                ]
+            )
+            return .success(payload)
+        } catch {
+            return .failure(error)
+        }
+    }
 
     private func post<Value: Decodable>(
         path: String,

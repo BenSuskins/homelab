@@ -20,6 +20,10 @@ public final class Session {
     }
 
     public private(set) var phase: Phase = .checking
+    /// Shown under the spinner on the device-code screen while a poll is
+    /// failing. Not an error: the grant is still live and still being polled,
+    /// and the screen says so rather than going quiet.
+    public private(set) var authorisationNotice: String?
     public private(set) var appState: AppState?
     /// Who the token belongs to. Nil until the first read lands, which is fine:
     /// the profile button falls back to a glyph, so nothing waits on it.
@@ -39,6 +43,7 @@ public final class Session {
     /// `api.github.com`; production builds get `URLSessionTransport`.
     private let transport: (any GitHubTransport)?
     private var pollingTask: Task<Void, Never>?
+    private var lastResumeAt: Date?
 
     public init(
         configuration: HomelabConfiguration,
@@ -70,6 +75,11 @@ public final class Session {
     }
 
     public func restore() async {
+        // Only ever runs the once. A scene that reconnects re-fires the `.task`
+        // that calls this, and without the guard that would wipe a device-code
+        // screen the user is part-way through.
+        guard case .checking = phase else { return }
+
         guard await tokens.token() != nil else {
             phase = .signedOut(message: nil)
             return
@@ -86,18 +96,54 @@ public final class Session {
         }
 
         pollingTask?.cancel()
+        authorisationNotice = nil
+        lastResumeAt = nil
         pollingTask = Task { [weak self] in
             guard let self else { return }
             do {
                 let grant = try await flow.requestCode()
                 phase = .awaitingAuthorisation(grant)
-                let token = try await flow.awaitToken(for: grant)
-                try await tokens.save(token)
-                activate()
+                try await awaitAuthorisation(of: grant)
             } catch let failure as DeviceFlowFailure {
-                phase = .signedOut(message: failure.displayMessage)
+                abandonSignIn(with: failure.displayMessage)
             } catch {
-                phase = .signedOut(message: error.localizedDescription)
+                abandonSignIn(with: error.localizedDescription)
+            }
+        }
+    }
+
+    /// Picks a device-code flow back up after the app was away.
+    ///
+    /// Leaving for Safari to type the code in is the *expected* path through
+    /// this screen, and iOS suspends us seconds later — which stops the polling
+    /// task mid-sleep and kills whatever request was in flight. The grant is
+    /// good for fifteen minutes, so coming back to the foreground restarts the
+    /// poll on the same grant rather than starting the user over.
+    public func resumeSignIn() {
+        guard case .awaitingAuthorisation(let grant) = phase else { return }
+        guard Date() < grant.expiresAt else {
+            phase = .signedOut(message: DeviceFlowFailure.expired.displayMessage)
+            return
+        }
+
+        // `.active` fires for a swipe at Control Centre too. Restarting the
+        // poll every time would poll GitHub as fast as the user can flick
+        // between apps, and GitHub answers that with `slow_down`.
+        if let lastResumeAt, Date().timeIntervalSince(lastResumeAt) < 5 { return }
+        lastResumeAt = Date()
+
+        pollingTask?.cancel()
+        authorisationNotice = nil
+        pollingTask = Task { [weak self] in
+            guard let self else { return }
+            do {
+                // No opening delay: you came back to this screen because you
+                // just finished authorising on the other one.
+                try await awaitAuthorisation(of: grant, firstDelay: .zero)
+            } catch let failure as DeviceFlowFailure {
+                abandonSignIn(with: failure.displayMessage)
+            } catch {
+                abandonSignIn(with: error.localizedDescription)
             }
         }
     }
@@ -105,7 +151,38 @@ public final class Session {
     public func cancelSignIn() {
         pollingTask?.cancel()
         pollingTask = nil
+        authorisationNotice = nil
         phase = .signedOut(message: nil)
+    }
+
+    private func awaitAuthorisation(
+        of grant: DeviceCodeGrant,
+        firstDelay: Duration? = nil
+    ) async throws {
+        let token = try await flow.awaitToken(
+            for: grant,
+            firstDelay: firstDelay,
+            onTransientFailure: { [weak self] failure in
+                // Hops rather than isolates: `awaitToken` is nonisolated and
+                // may call this from whichever executor the poll landed on.
+                Task { @MainActor in
+                    self?.authorisationNotice = failure.displayMessage
+                }
+            }
+        )
+        authorisationNotice = nil
+        try await tokens.save(token)
+        activate()
+    }
+
+    /// Ends the flow and says why — unless this task was cancelled, in which
+    /// case either `cancelSignIn` has already decided what the screen says or
+    /// `resumeSignIn` has already replaced us with a fresh poll.
+    private func abandonSignIn(with message: String) {
+        authorisationNotice = nil
+        guard !Task.isCancelled else { return }
+        pollingTask = nil
+        phase = .signedOut(message: message)
     }
 
     public func signOut() async {

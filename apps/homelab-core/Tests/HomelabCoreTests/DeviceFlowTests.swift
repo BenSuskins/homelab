@@ -101,6 +101,60 @@ struct DeviceFlowTests {
         }
     }
 
+    @Test("survives the app being suspended mid-poll instead of abandoning the grant")
+    func retriesThroughTransportFailures() async throws {
+        // What backgrounding to Safari to type the code in actually looks like:
+        // the in-flight poll dies with the process. The grant is still good.
+        let session = ScriptedURLProtocol.session(responses: [
+            #"{"error":"authorization_pending"}"#,
+            ScriptedURLProtocol.transportFailure,
+            ScriptedURLProtocol.transportFailure,
+            #"{"access_token":"ghu_abc"}"#,
+        ])
+
+        let notices = FailureRecorder()
+        let token = try await flow(session).awaitToken(
+            for: grant(),
+            onTransientFailure: { failure in notices.record(failure) },
+            sleep: { _ in }
+        )
+
+        #expect(token == "ghu_abc")
+        // Reported, so the screen can say what is happening — but not thrown.
+        #expect(notices.count == 2)
+    }
+
+    @Test("still gives up on a transport failure once the grant has expired")
+    func transientFailuresDoNotOutliveTheGrant() async {
+        let session = ScriptedURLProtocol.session(responses: [
+            ScriptedURLProtocol.transportFailure,
+        ])
+
+        await #expect(throws: DeviceFlowFailure.expired) {
+            try await flow(session).awaitToken(
+                for: grant(expiresAt: Date(timeIntervalSince1970: 0)),
+                sleep: { _ in }
+            )
+        }
+    }
+
+    @Test("polls straight away when a suspended flow is picked back up")
+    func resumesWithoutWaitingOutTheInterval() async throws {
+        let session = ScriptedURLProtocol.session(responses: [#"{"access_token":"ghu_abc"}"#])
+
+        let recorder = SleepRecorder()
+        let token = try await flow(session).awaitToken(
+            for: grant(interval: .seconds(5)),
+            firstDelay: .zero,
+            sleep: { await recorder.record($0) }
+        )
+
+        #expect(token == "ghu_abc")
+        // Coming back from Safari having just authorised should not then sit
+        // on a spinner for the whole polling interval.
+        #expect(await recorder.intervals == [.zero])
+    }
+
     @Test("asks for the scopes the app actually needs and no others")
     func requestsMinimumViableScope() {
         // Device flow can only issue classic scopes, so this string is the
@@ -127,11 +181,28 @@ actor SleepRecorder {
     func record(_ interval: Duration) { intervals.append(interval) }
 }
 
+/// Counts the transient failures reported out of a poll loop. A class with a
+/// lock rather than an actor because `onTransientFailure` is synchronous.
+final class FailureRecorder: @unchecked Sendable {
+    private let lock = NSLock()
+    private var failures: [DeviceFlowFailure] = []
+
+    var count: Int { lock.withLock { failures.count } }
+
+    func record(_ failure: DeviceFlowFailure) {
+        lock.withLock { failures.append(failure) }
+    }
+}
+
 /// Answers each request with the next canned body, so a poll loop can be walked
 /// through pending → success without a real network or a real wait.
 final class ScriptedURLProtocol: URLProtocol, @unchecked Sendable {
     private static let lock = NSLock()
     nonisolated(unsafe) private static var queued: [String] = []
+
+    /// Queue this instead of a body to fail the request at the transport, the
+    /// way a poll in flight when iOS suspends the app fails.
+    static let transportFailure = "@@transport-failure@@"
 
     static func session(responses: [String]) -> URLSession {
         lock.withLock { queued = responses }
@@ -157,6 +228,13 @@ final class ScriptedURLProtocol: URLProtocol, @unchecked Sendable {
     override func stopLoading() {}
 
     override func startLoading() {
+        let body = Self.next()
+
+        if body == Self.transportFailure {
+            client?.urlProtocol(self, didFailWithError: URLError(.networkConnectionLost))
+            return
+        }
+
         let response = HTTPURLResponse(
             url: request.url!,
             statusCode: 200,
@@ -164,7 +242,7 @@ final class ScriptedURLProtocol: URLProtocol, @unchecked Sendable {
             headerFields: nil
         )!
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-        client?.urlProtocol(self, didLoad: Data(Self.next().utf8))
+        client?.urlProtocol(self, didLoad: Data(body.utf8))
         client?.urlProtocolDidFinishLoading(self)
     }
 }

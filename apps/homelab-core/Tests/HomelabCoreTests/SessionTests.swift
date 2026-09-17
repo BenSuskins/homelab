@@ -70,6 +70,31 @@ struct SessionTests {
         #expect(stored == "gho_stored")
     }
 
+    /// The iOS scene's `.task` re-fires when the scene reconnects, and a second
+    /// restore used to rebuild `AppState` — or, mid-sign-in, replace the
+    /// device-code screen with the sign-in one.
+    @Test("a second restore leaves the session it already built alone")
+    func restoreIsIdempotent() async {
+        let (session, _) = makeSession(token: "gho_stored")
+        await session.restore()
+        let state = session.appState
+
+        await session.restore()
+
+        #expect(session.appState === state)
+    }
+
+    @Test("resuming a sign-in does nothing when there is no flow to resume")
+    func resumeSignInIsInert() async {
+        let (session, _) = makeSession(token: "gho_stored")
+        await session.restore()
+
+        // Called on every return to the foreground, signed in or not.
+        session.resumeSignIn()
+
+        #expect(session.isSignedIn)
+    }
+
     @Test("an explicit sign out still clears the token")
     func explicitSignOutClears() async {
         let (session, tokens) = makeSession(token: "gho_stored")

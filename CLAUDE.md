@@ -192,6 +192,10 @@ All GitHub access goes through the `GitHubTransport` protocol, which is the only
 
 `openPullRequests()` uses GraphQL, not REST, and must stay that way: REST's `/pulls` list endpoint does not return `mergeable` at all, so a "simplification" to REST silently breaks `canMerge`.
 
+The Loki and Prometheus clients build query strings through `QueryEncoding`, not `URLComponents.queryItems`, which leaves `+` unescaped — and Go's `url.ParseQuery` reads a bare `+` as a space. That turned the logs screen's default selector `{container=~".+"}` into `{container=~". "}`, which matches nothing. Any new query parameter goes the same way.
+
+The device flow tolerates a failed poll and retries until the grant expires, and `Session.resumeSignIn()` restarts it from the foreground. Leaving for Safari to type the code in is the expected path through that screen, and iOS suspends the app while you are over there; treating the resulting transport failure as fatal is what used to cancel the sign-in.
+
 **`update.yml` and `build-mcp-arr.yml` carry `paths-ignore: ['apps/**']`.** Both trigger on every push to `main`; without those blocks a commit touching only Swift code runs Ansible against all six hosts. Do not remove them. `apps.yml` is the other half of that pair — it runs on `paths: ['apps/**']` and is the only workflow that builds or tests the Swift. It needs a GitHub-hosted macOS runner; the `self-hosted` one is Linux. See `docs/adr/0003-menu-bar-app-lives-in-this-repo.md`.
 
 `docs/ios-app-scope.md` is the plan the apps were built to, including the roadmap past v1 (service directory, log viewer, metrics, SSH); the metrics and run-history entries are now built, the rest are not.
