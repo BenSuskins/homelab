@@ -1,5 +1,6 @@
 import HomelabCore
 import SwiftUI
+import UIKit
 
 struct SignInView: View {
     let message: String?
@@ -89,6 +90,8 @@ struct DeviceCodeView: View {
     @Environment(\.palette) private var palette
     @Environment(\.openURL) private var openURL
 
+    @State private var hasCopied = false
+
     var body: some View {
         ZStack {
             palette.canvas.ignoresSafeArea()
@@ -100,11 +103,26 @@ struct DeviceCodeView: View {
                     .font(Typeface.headline)
                     .foregroundStyle(palette.textPrimary)
 
-                Text(grant.userCode)
-                    .font(.system(size: 38, weight: .bold, design: .monospaced))
-                    .foregroundStyle(palette.textPrimary)
-                    .tracking(3)
-                    .textSelection(.enabled)
+                // Tappable, because the next thing that happens is that you
+                // leave for Safari and have to reproduce it there.
+                Button {
+                    UIPasteboard.general.string = grant.userCode
+                    withAnimation { hasCopied = true }
+                } label: {
+                    VStack(spacing: 6) {
+                        Text(grant.userCode)
+                            .font(.system(size: 38, weight: .bold, design: .monospaced))
+                            .foregroundStyle(palette.textPrimary)
+                            .tracking(3)
+
+                        HStack(spacing: 4) {
+                            Image(systemName: hasCopied ? "checkmark" : "doc.on.doc")
+                                .font(.system(size: 9, weight: .bold))
+                            Text(hasCopied ? "Copied" : "Tap to copy")
+                                .font(Typeface.footnote)
+                        }
+                        .foregroundStyle(hasCopied ? palette.positive : palette.textTertiary)
+                    }
                     .padding(.horizontal, 22)
                     .padding(.vertical, 14)
                     .background(
@@ -115,6 +133,8 @@ struct DeviceCodeView: View {
                         RoundedRectangle(cornerRadius: Metrics.corner, style: .continuous)
                             .strokeBorder(palette.border, lineWidth: Metrics.hairline)
                     )
+                }
+                .buttonStyle(.plain)
 
                 Button {
                     openURL(grant.verificationURL)
@@ -135,11 +155,28 @@ struct DeviceCodeView: View {
                 }
                 .buttonStyle(.plain)
 
-                HStack(spacing: 7) {
-                    ProgressView().controlSize(.mini).tint(palette.textTertiary)
-                    Text("Waiting for authorisation…")
-                        .font(Typeface.caption)
-                        .foregroundStyle(palette.textSecondary)
+                VStack(spacing: 6) {
+                    HStack(spacing: 7) {
+                        ProgressView().controlSize(.mini).tint(palette.textTertiary)
+                        Text("Waiting for authorisation…")
+                            .font(Typeface.caption)
+                            .foregroundStyle(palette.textSecondary)
+                    }
+
+                    // The flow survives being backgrounded now, so a failed
+                    // poll is worth a line rather than a trip back to sign-in.
+                    Text(
+                        session.authorisationNotice
+                            ?? "Leaving the app is fine — this keeps waiting."
+                    )
+                    .font(Typeface.footnote)
+                    .foregroundStyle(
+                        session.authorisationNotice == nil
+                            ? palette.textTertiary
+                            : palette.warning
+                    )
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
                 }
 
                 Spacer()

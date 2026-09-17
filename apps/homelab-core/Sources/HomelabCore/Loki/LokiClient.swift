@@ -22,6 +22,10 @@ public struct LokiLogEntry: Sendable, Equatable, Identifiable {
     public let labels: [String: String]
     public let line: String
 
+    /// The line taken apart. Parsed once here rather than on every access,
+    /// because a list of five hundred rows reads it while you scroll.
+    public let record: LogRecord
+
     public var id: String {
         let labelText = labels.sorted { $0.key < $1.key }
             .map { "\($0.key)=\($0.value)" }
@@ -34,15 +38,21 @@ public struct LokiLogEntry: Sendable, Equatable, Identifiable {
 
     /// Read out of the line itself, because Alloy's `loki.source.docker` ships
     /// container stdout verbatim: there is no level label to read, and every
-    /// container writes its own format. A cheap scan of the first few words is
-    /// wrong sometimes, which is why it only ever tints a line rather than
-    /// filtering one out.
-    public var level: LogLevel { LogLevel(line: line) }
+    /// container writes its own format. `LogRecord` reads a declared level
+    /// where the line has one and guesses otherwise, and a guess only ever
+    /// tints a row — `record.declaresLevel` is what the filter trusts.
+    public var level: LogLevel { record.level }
+
+    /// The stamp the container wrote, when it wrote one, falling back to the
+    /// one Loki ingested the line with. They differ by the ingest delay, and on
+    /// a bad afternoon that delay is the thing you are looking at.
+    public var writtenAt: Date { record.timestamp ?? timestamp }
 
     public init(timestamp: Date, labels: [String: String], line: String) {
         self.timestamp = timestamp
         self.labels = labels
         self.line = line
+        self.record = LogRecord(line: line)
     }
 }
 
@@ -72,6 +82,25 @@ public enum LogLevel: String, Sendable, Equatable, CaseIterable, Codable {
         }
     }
 
+    /// A level the line actually declared — `level=warn`, `"severity":"ERROR"`,
+    /// a leading `[info]`. Nil rather than a default, so a caller can tell a
+    /// declared level from a guessed one.
+    public init?(token: String) {
+        switch token.trimmingCharacters(in: CharacterSet(charactersIn: "\"[] \t")).lowercased() {
+        case "error", "err", "eror", "fatal", "critical", "crit", "panic",
+             "alert", "emerg", "emergency", "severe":
+            self = .error
+        case "warn", "warning", "wrn":
+            self = .warning
+        case "info", "information", "inf", "notice", "log":
+            self = .info
+        case "debug", "dbg", "trace", "verbose", "fine":
+            self = .debug
+        default:
+            return nil
+        }
+    }
+
     public var label: String {
         switch self {
         case .error: "ERR"
@@ -80,6 +109,9 @@ public enum LogLevel: String, Sendable, Equatable, CaseIterable, Codable {
         case .debug: "DBG"
         }
     }
+
+    /// Loudest first, which is the order the filter chips are shown in.
+    public static let bySeverity: [LogLevel] = [.error, .warning, .info, .debug]
 
     /// Whether the line is worth colouring at all. Info and debug are the
     /// overwhelming majority and stay in the body colour.
@@ -121,15 +153,32 @@ public struct LokiClient: Sendable {
         return try Self.decodeEntries(from: data)
     }
 
-    public func labelValues(_ label: String) async throws(LokiFailure) -> [String] {
+    /// The values a label takes, over the same window the entries are read for.
+    ///
+    /// The window is not optional in practice: Loki defaults these endpoints to
+    /// the last six hours, so at a 24-hour range the pickers would otherwise
+    /// omit a container that has been quiet since this morning — exactly the
+    /// one you opened the app to look for.
+    public func labelValues(
+        _ label: String,
+        start: Date? = nil,
+        end: Date = Date()
+    ) async throws(LokiFailure) -> [String] {
         let path = "loki/api/v1/label/\(label)/values"
-        let data = try await get(makeURL(path: path, queryItems: []))
+        var items: [URLQueryItem] = []
+        if let start {
+            items = [
+                URLQueryItem(name: "start", value: Self.nanoseconds(start)),
+                URLQueryItem(name: "end", value: Self.nanoseconds(end)),
+            ]
+        }
+        let data = try await get(makeURL(path: path, queryItems: items))
         return try Self.decodeLabelValues(from: data)
     }
 
     public func tail(
         _ query: String,
-        start: Date = Date().addingTimeInterval(-3600),
+        start: Date = Date(),
         limit: Int = 100
     ) -> AsyncThrowingStream<LokiLogEntry, Error> {
         let url: URL
@@ -164,7 +213,7 @@ public struct LokiClient: Sendable {
                             continue
                         }
 
-                        for entry in try Self.decodeEntries(from: data) {
+                        for entry in try Self.decodeTailEntries(from: data) {
                             continuation.yield(entry)
                         }
                     }
@@ -199,7 +248,25 @@ public struct LokiClient: Sendable {
             throw LokiFailure.queryRejected(payload.error ?? "Loki reported \(payload.status)")
         }
 
-        return payload.data?.result.flatMap { stream in
+        return entries(in: payload.data?.result ?? [])
+    }
+
+    /// `/loki/api/v1/tail` does not answer in the query envelope: a frame is
+    /// `{"streams": [...], "dropped_entries": [...]}` with no `status` key at
+    /// all. Decoding it as a query response therefore failed on every single
+    /// frame, which is why the Live toggle lit up and then never showed a line.
+    static func decodeTailEntries(from data: Data) throws(LokiFailure) -> [LokiLogEntry] {
+        let payload: TailPayload
+        do {
+            payload = try JSONDecoder().decode(TailPayload.self, from: data)
+        } catch {
+            throw LokiFailure.malformedResponse(String(describing: error))
+        }
+        return entries(in: payload.streams ?? [])
+    }
+
+    private static func entries(in streams: [Stream]) -> [LokiLogEntry] {
+        streams.flatMap { stream in
             stream.values.compactMap { value in
                 guard value.count == 2,
                       let rawTimestamp = value.first,
@@ -211,7 +278,8 @@ public struct LokiClient: Sendable {
                     line: line
                 )
             }
-        }.sorted { $0.timestamp < $1.timestamp } ?? []
+        }
+        .sorted { $0.timestamp < $1.timestamp }
     }
 
     static func decodeLabelValues(from data: Data) throws(LokiFailure) -> [String] {
@@ -220,7 +288,9 @@ public struct LokiClient: Sendable {
             guard payload.status == "success" else {
                 throw LokiFailure.queryRejected("Loki reported \(payload.status)")
             }
-            return payload.data.sorted()
+            // Absent rather than empty is what a Loki with nothing to say
+            // answers with, and it is not a malformed response.
+            return (payload.data ?? []).sorted()
         } catch let failure as LokiFailure {
             throw failure
         } catch {
@@ -250,7 +320,11 @@ public struct LokiClient: Sendable {
         ) else {
             throw .malformedResponse("Could not build Loki URL")
         }
-        components.queryItems = queryItems
+        // `percentEncodedQueryItems`, not `queryItems`: the latter leaves `+`
+        // alone and Loki then reads it as a space. See `QueryEncoding`.
+        components.percentEncodedQueryItems = queryItems.isEmpty
+            ? nil
+            : QueryEncoding.encoded(queryItems)
         guard let url = components.url else {
             throw .malformedResponse("Could not build Loki URL")
         }
@@ -289,6 +363,10 @@ public struct LokiClient: Sendable {
         let result: [Stream]
     }
 
+    private struct TailPayload: Decodable {
+        let streams: [Stream]?
+    }
+
     private struct Stream: Decodable {
         let stream: [String: String]
         let values: [[String]]
@@ -296,6 +374,6 @@ public struct LokiClient: Sendable {
 
     private struct LabelPayload: Decodable {
         let status: String
-        let data: [String]
+        let data: [String]?
     }
 }

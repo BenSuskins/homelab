@@ -34,8 +34,11 @@ and three home-screen widgets.
 - **Health** — a window picker (1H/6H/24H/7D) scoping every chart at once, the
   status strip, how many endpoints were failing over that window, then one card
   per host. Tapping a host opens its CPU, memory, disk and load charts.
-- **Logs** — host and container filters as menus, an explicit live-tail toggle,
-  and lines tinted by a level read out of the line itself.
+- **Logs** — host and container filters as menus, a level filter carrying its
+  own counts, a search field, an explicit live-tail toggle, and lines shown
+  taken apart rather than printed: the level, the container's own timestamp,
+  the message, then the remaining fields as chips. Tapping a line opens every
+  field, every stream label, both timestamps and the raw line.
 - **Account** — behind the avatar in the top right, on every screen. Sign-out
   lives here rather than under the deploy buttons.
 
@@ -143,8 +146,26 @@ tailnet. It supports a one-hour history by default, host and container filters,
 and an explicit live-tail mode. Loki receives the same Friendly Name `host`
 label that Prometheus uses. The viewer does not include host journal logs.
 
-Lines are tinted by a level read out of the line itself, because
-`loki.source.docker` ships container stdout verbatim — there is no level label
-to read, and every container writes its own format. The scan is deliberately
-coarse and only ever tints a line; it never filters one out, so a
-misclassified line is a missing colour rather than a missing log.
+Lines are read apart by `LogRecord`, because `loki.source.docker` ships
+container stdout verbatim — there is no level label to read, and every container
+writes its own format. Three shapes are recognised: JSON, logfmt, and plain
+text with a leading timestamp and a bracketed level. From whichever it is, the
+row shows the level, the timestamp the container wrote, the message, and the
+remaining fields as chips; the rest is one tap away on the detail sheet, which
+also carries the raw line in case the parse got something wrong.
+
+A level the line declared (`level=warn`, `"severity":"ERROR"`, a leading
+`[info]`) is treated differently from one guessed out of the words in the line:
+the detail sheet says which it is, and only a declared level is safe to filter
+on. Nothing is ever dropped for being misclassified — the level filter narrows
+what is shown, and the counts on the chips say what it is narrowing from.
+
+Two things about this screen were broken and are worth not re-breaking:
+
+- The unfiltered selector is `{container=~".+"}`. `URLComponents.queryItems`
+  does not escape `+`, and Go's `url.ParseQuery` reads a bare `+` as a space, so
+  Loki was being asked for `{container=~". "}` and answering — correctly — with
+  nothing. Both clients now build their query strings through `QueryEncoding`.
+- `/loki/api/v1/tail` answers with `{"streams": [...]}`, not the `status`/`data`
+  envelope the query endpoints use. Decoding a tail frame as a query response
+  fails on every frame, which is what made Live light up and show nothing.

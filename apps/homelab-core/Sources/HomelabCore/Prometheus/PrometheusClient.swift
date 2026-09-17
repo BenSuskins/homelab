@@ -124,7 +124,11 @@ public struct PrometheusClient: Sendable {
             url: baseURL.appendingPathComponent(path),
             resolvingAgainstBaseURL: false
         )
-        components?.queryItems = items
+        // `percentEncodedQueryItems`, not `queryItems`: the latter leaves `+`
+        // alone and Prometheus then reads it as a space, which would silently
+        // break the first query anyone writes with a `.+` matcher in it. See
+        // `QueryEncoding`, and the logs screen that this had already broken.
+        components?.percentEncodedQueryItems = QueryEncoding.encoded(items)
 
         guard let url = components?.url else {
             throw .malformedResponse("Could not build query URL")

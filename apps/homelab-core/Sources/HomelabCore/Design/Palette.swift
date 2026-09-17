@@ -143,6 +143,18 @@ public struct Palette: Sendable, Equatable {
     public func color(isUp: Bool) -> Color {
         isUp ? positive : negative
     }
+
+    /// A log level. Info and debug stay in the text ramp rather than taking a
+    /// status colour, because almost every line is one of them and a screen
+    /// where everything is coloured is a screen where nothing stands out.
+    public func color(for level: LogLevel) -> Color {
+        switch level {
+        case .error: negative
+        case .warning: warning
+        case .info: textSecondary
+        case .debug: textTertiary
+        }
+    }
 }
 
 extension Color {

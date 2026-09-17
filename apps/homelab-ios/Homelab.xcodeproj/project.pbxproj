@@ -13,6 +13,7 @@
 		65D93D4F8615D02448F82353 /* BiometricWriteAuthorisation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 731958831B9B633EB7054215 /* BiometricWriteAuthorisation.swift */; };
 		726D460A6A0F19DC28F113AC /* HealthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7177A30531B54ABAF648B74F /* HealthView.swift */; };
 		7B38D2B7B2E44E1D8A2B4D91 /* LogsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B38D2B6B2E44E1D8A2B4D91 /* LogsView.swift */; };
+		1D4A7C0F5B2F48A39C610FD2 /* LogDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D4A7C0E5B2F48A39C610FD2 /* LogDetailView.swift */; };
 		7DF7462030EF407F093DD8A9 /* HomelabWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08651508EB54B059E554563C /* HomelabWidget.swift */; };
 		A4C6E9B1F73142C6B0012A51 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A4C6E9B0F73142C6B0012A51 /* Assets.xcassets */; };
 		916AD62C84ADB22FFBB8EEA2 /* HomelabWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7CFB96D029BCCA6191D25A4C /* HomelabWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -61,6 +62,7 @@
 		594FFBC4847918D24EEBAB60 /* Homelab.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Homelab.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7177A30531B54ABAF648B74F /* HealthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthView.swift; sourceTree = "<group>"; };
 		7B38D2B6B2E44E1D8A2B4D91 /* LogsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogsView.swift; sourceTree = "<group>"; };
+		1D4A7C0E5B2F48A39C610FD2 /* LogDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogDetailView.swift; sourceTree = "<group>"; };
 		731958831B9B633EB7054215 /* BiometricWriteAuthorisation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricWriteAuthorisation.swift; sourceTree = "<group>"; };
 		7CFB96D029BCCA6191D25A4C /* HomelabWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HomelabWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		A05C5B72EFC5C657A0A935D1 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
@@ -155,6 +157,7 @@
 				731958831B9B633EB7054215 /* BiometricWriteAuthorisation.swift */,
 				7177A30531B54ABAF648B74F /* HealthView.swift */,
 				7B38D2B6B2E44E1D8A2B4D91 /* LogsView.swift */,
+				1D4A7C0E5B2F48A39C610FD2 /* LogDetailView.swift */,
 				542F10223BDBCDEB406B4DE7 /* HomelabApp.entitlements */,
 				19EC8964D626BCD3CC42EAEB /* HomelabApp.swift */,
 				0EA05B531B5F95F3CEE5D217 /* Info.plist */,
@@ -267,6 +270,7 @@
 				65D93D4F8615D02448F82353 /* BiometricWriteAuthorisation.swift in Sources */,
 				726D460A6A0F19DC28F113AC /* HealthView.swift in Sources */,
 				7B38D2B7B2E44E1D8A2B4D91 /* LogsView.swift in Sources */,
+				1D4A7C0F5B2F48A39C610FD2 /* LogDetailView.swift in Sources */,
 				57FC1BBA724745A745B01F1C /* HomelabApp.swift in Sources */,
 				FB5443B7248604C6A9F388B4 /* PullRequestsView.swift in Sources */,
 				54F9BED11CD44E9EAC48334F /* RootView.swift in Sources */,
