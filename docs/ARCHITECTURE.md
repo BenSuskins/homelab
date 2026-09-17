@@ -141,7 +141,6 @@ _Generated from live inventory on 2026-06-20T20:52:52Z. Source of truth is `grou
 |---------|------|------|------------|-----|---------|
 | alloy | 192.168.0.206 | — | — | — | false |
 | mcpjungle | 192.168.0.206 | 8090 | [192.168.0.206:8090](http://192.168.0.206:8090) | [mcp.suskins.co.uk](https://mcp.suskins.co.uk) | false |
-| openclaw | 192.168.0.206 | 18789 | [192.168.0.206:18789](http://192.168.0.206:18789) | [openclaw.suskins.co.uk](https://openclaw.suskins.co.uk) | false |
 | radarr-mcp | 192.168.0.206 | 4200 | [192.168.0.206:4200](http://192.168.0.206:4200) | — | false |
 | sonarr-mcp | 192.168.0.206 | 9171 | [192.168.0.206:9171](http://192.168.0.206:9171) | — | false |
 

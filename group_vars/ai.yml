@@ -5,11 +5,6 @@ containers:
   # MCP
   - mcpjungle
   - media-server-mcp
-  # AI
-  - openclaw
-  # Disabled while OpenClaw is trialled — update.yml reaps the running
-  # container, so this stops Hermes without dropping the definition.
-  # - hermes
   # Work
   - workboard
   - workboard-mcp
