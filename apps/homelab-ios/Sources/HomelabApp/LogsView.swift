@@ -515,18 +515,17 @@ enum LogRange: String, CaseIterable, Identifiable {
 /// Log timestamps, to the millisecond. Two lines a millisecond apart is the
 /// difference between a cause and a coincidence, so the row shows it.
 ///
-/// `nonisolated(unsafe)` for the same reason as `Timestamps` in the core: a
-/// formatter is expensive to build and is hit once per row, and one that is
-/// never reconfigured after construction is safe to read from anywhere.
+/// Statics for the same reason as `Timestamps` in the core: a formatter is
+/// expensive to build and one of these is hit once per row.
 enum LogTime {
-    nonisolated(unsafe) private static let clockFormatter: DateFormatter = {
+    private static let clockFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_GB")
         formatter.dateFormat = "HH:mm:ss.SSS"
         return formatter
     }()
 
-    nonisolated(unsafe) private static let stampFormatter: DateFormatter = {
+    private static let stampFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_GB")
         formatter.dateFormat = "d MMM yyyy 'at' HH:mm:ss.SSS"

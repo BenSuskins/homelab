@@ -326,10 +326,10 @@ public struct LogRecord: Sendable, Equatable {
 /// The timestamp formats that turn up inside log lines.
 ///
 /// Held as statics because a formatter is expensive to build and these are hit
-/// once per line, five hundred lines at a time. `nonisolated(unsafe)` is the
-/// honest label for that: Foundation's formatters are safe to *use* from
-/// several threads, they are only unsafe to reconfigure, and nothing here
-/// touches one after it is built.
+/// once per line, five hundred lines at a time. `DateFormatter` is `Sendable`
+/// and needs nothing further; `ISO8601DateFormatter` is not, so it carries
+/// `nonisolated(unsafe)` — safe here because Foundation's formatters are only
+/// unsafe to *reconfigure*, and nothing touches one after it is built.
 enum Timestamps {
     nonisolated(unsafe) private static let iso8601: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
@@ -345,14 +345,14 @@ enum Timestamps {
 
     /// Slash-separated dates with a space, which AdGuard and several of the
     /// *arr containers use and which `ISO8601DateFormatter` will not touch.
-    nonisolated(unsafe) private static let slashed: DateFormatter = {
+    private static let slashed: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy/MM/dd HH:mm:ss.SSS"
         return formatter
     }()
 
-    nonisolated(unsafe) private static let slashedWholeSeconds: DateFormatter = {
+    private static let slashedWholeSeconds: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy/MM/dd HH:mm:ss"
