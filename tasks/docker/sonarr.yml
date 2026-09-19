@@ -16,12 +16,12 @@
     source: pull
     force_source: true
   vars:
-    image: ghcr.io/linuxserver/sonarr:4.0.19
+    image: ghcr.io/linuxserver/sonarr:4.0.20
 
 - name: SONARR - Create container
   community.docker.docker_container:
     name: sonarr
-    image: ghcr.io/linuxserver/sonarr:4.0.19
+    image: ghcr.io/linuxserver/sonarr:4.0.20
     restart_policy: always
     state: started
     pull: false
