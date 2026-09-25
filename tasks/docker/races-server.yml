@@ -1,0 +1,90 @@
+---
+# The Races backend: a Go server with one SQLite file, built by the races repo's
+# server.yml workflow. It holds the Racing API and Betfair credentials so the
+# iOS app never does; the app authenticates to it with RACES_API_TOKEN.
+#
+# Internal only. Traefik routes races-api.suskins.co.uk to it with
+# `secured: false` — Authelia's login page would break a native client — and the
+# server checks its own bearer token. The name resolves through AdGuard's
+# *.suskins.co.uk rewrite, so it works at home and over Tailscale and needs no
+# Cloudflare record.
+- name: RACES-SERVER - Check vault secrets
+  ansible.builtin.assert:
+    that:
+      - RACES_API_TOKEN is defined
+      - RACES_API_TOKEN | length >= 16
+      - RACING_API_USERNAME is defined
+      - RACING_API_USERNAME | length > 0
+      - RACING_API_PASSWORD is defined
+      - RACING_API_PASSWORD | length > 0
+    fail_msg: >-
+      RACES_API_TOKEN (16+ characters), RACING_API_USERNAME and RACING_API_PASSWORD
+      must be set in the vault. BETFAIR_APP_KEY, BETFAIR_USERNAME and
+      BETFAIR_PASSWORD are optional; without them every tip is form-only.
+
+# The database is the only copy of results the free tier cannot re-fetch, and
+# nothing backs it up yet. Keep that in mind before deleting this directory.
+- name: RACES-SERVER - Create directory and permissions
+  ansible.builtin.file:
+    path: "{{ base_dir }}/races"
+    recurse: true
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    mode: "0750"
+
+- name: RACES-SERVER - Pre-pull image
+  community.docker.docker_image:
+    name: "{{ image }}"
+    source: pull
+    force_source: true
+  vars:
+    image: ghcr.io/bensuskins/races-server:latest
+
+- name: RACES-SERVER - Create container
+  community.docker.docker_container:
+    name: races-server
+    image: ghcr.io/bensuskins/races-server:latest
+    restart_policy: always
+    state: started
+    pull: false
+    # The image runs as distroless nonroot; run as the host user instead so the
+    # SQLite file in the bind mount stays owned by it.
+    user: "{{ puid }}:{{ pgid }}"
+    networks:
+      - name: homelab
+    volumes:
+      - "{{ base_dir }}/races:/data"
+    ports:
+      - "8790:8080"
+    env:
+      TZ: "{{ timezone }}"
+      RACES_DB_PATH: /data/races.db
+      RACES_API_TOKEN: "{{ RACES_API_TOKEN }}"
+      RACING_API_USERNAME: "{{ RACING_API_USERNAME }}"
+      RACING_API_PASSWORD: "{{ RACING_API_PASSWORD }}"
+      BETFAIR_APP_KEY: "{{ BETFAIR_APP_KEY | default('') }}"
+      BETFAIR_USERNAME: "{{ BETFAIR_USERNAME | default('') }}"
+      BETFAIR_PASSWORD: "{{ BETFAIR_PASSWORD | default('') }}"
+
+- name: RACES-SERVER - Define service entry
+  ansible.builtin.set_fact:
+    races_server_entry:
+      name: races-server
+      description: Races backend
+      icon: mdi-horse
+      host: "races-api.{{ domain }}"
+      ip: "{{ inventory_hostname }}"
+      friendly_name: "{{ friendly_name }}"
+      port: 8790
+      scheme: http
+      secured: false
+      proxied: true
+      homepage: true
+      healthcheck: true
+      healthcheck_path: /healthz
+      metrics: true
+
+- name: RACES-SERVER - Append to docker_services
+  ansible.builtin.set_fact:
+    docker_services: "{{ docker_services + [races_server_entry] }}"
