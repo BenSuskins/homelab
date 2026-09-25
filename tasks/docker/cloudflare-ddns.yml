@@ -5,12 +5,12 @@
     source: pull
     force_source: true
   vars:
-    image: favonia/cloudflare-ddns:1.17.0
+    image: favonia/cloudflare-ddns:1.17.1
 
 - name: CLOUDFLARE-DDNS - Create container
   community.docker.docker_container:
     name: cloudflare-ddns
-    image: favonia/cloudflare-ddns:1.17.0
+    image: favonia/cloudflare-ddns:1.17.1
     restart_policy: always
     state: started
     pull: false
