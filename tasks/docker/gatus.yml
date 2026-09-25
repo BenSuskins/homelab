@@ -29,12 +29,12 @@
     source: pull
     force_source: true
   vars:
-    image: twinproduction/gatus:v5.36.0
+    image: twinproduction/gatus:v5.37.0
 
 - name: GATUS - Create container
   community.docker.docker_container:
     name: gatus
-    image: twinproduction/gatus:v5.36.0
+    image: twinproduction/gatus:v5.37.0
     restart_policy: always
     state: started
     pull: false
