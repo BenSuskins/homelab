@@ -35,12 +35,12 @@
     source: pull
     force_source: true
   vars:
-    image: prom/prometheus:v3.14.0
+    image: prom/prometheus:v3.15.0
 
 - name: PROMETHEUS - Create container
   community.docker.docker_container:
     name: prometheus
-    image: prom/prometheus:v3.14.0
+    image: prom/prometheus:v3.15.0
     restart_policy: always
     state: started
     pull: false

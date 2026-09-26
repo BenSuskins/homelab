@@ -122,12 +122,12 @@
     source: pull
     force_source: true
   vars:
-    image: grafana/alloy:v1.19.2
+    image: grafana/alloy:v1.20.0
 
 - name: ALLOY - Create container
   community.docker.docker_container:
     name: alloy
-    image: grafana/alloy:v1.19.2
+    image: grafana/alloy:v1.20.0
     restart_policy: always
     state: started
     pull: false
