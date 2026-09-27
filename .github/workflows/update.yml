@@ -37,6 +37,7 @@ jobs:
 
       - name: Run Ansible
         run: |
+          set -o pipefail
           ansible-playbook plays/update.yml --vault-password-file ~/.ansible_vault_pass 2>&1 | tee /tmp/ansible_output.txt
 
       - name: Post to job summary

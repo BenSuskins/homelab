@@ -1,4 +1,9 @@
 ---
+- name: MEDIA-SERVER-MCP - Clear cached GHCR credentials
+  community.docker.docker_login:
+    registry_url: ghcr.io
+    state: absent
+
 - name: MEDIA-SERVER-MCP - Pre-pull image
   community.docker.docker_image:
     name: "{{ image }}"
