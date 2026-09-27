@@ -14,12 +14,12 @@
     source: pull
     force_source: true
   vars:
-    image: ghcr.io/mcpjungle/mcpjungle:latest
+    image: mcpjungle/mcpjungle:latest
 
 - name: MCPJUNGLE - Create container
   community.docker.docker_container:
     name: mcpjungle
-    image: ghcr.io/mcpjungle/mcpjungle:latest
+    image: mcpjungle/mcpjungle:latest
     restart_policy: always
     state: started
     pull: false

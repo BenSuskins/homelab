@@ -109,9 +109,17 @@
             label: "{{ item.Names[0] | default('unknown') }}"
           when: (item.Names[0] | regex_replace('^/', '')) not in expected_containers
       rescue:
-        - name: UPDATE - Report docker failure
-          ansible.builtin.fail:
-            msg: "Docker operations failed"
+        - name: UPDATE - Record docker failure
+          ansible.builtin.set_fact:
+            docker_operations_failure: "{{ ansible_failed_result }}"
+      tags: [docker]
+
+    - name: UPDATE - Fail when docker operations failed
+      ansible.builtin.fail:
+        msg: >-
+          Docker operations failed:
+          {{ docker_operations_failure.msg | default('unknown error') }}
+      when: docker_operations_failure is defined
       tags: [docker]
 
     - name: UPDATE - Aggregate services from all hosts
