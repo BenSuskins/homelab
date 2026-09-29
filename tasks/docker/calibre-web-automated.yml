@@ -19,12 +19,12 @@
     source: pull
     force_source: true
   vars:
-    image: crocodilestick/calibre-web-automated:v4.0.6
+    image: crocodilestick/calibre-web-automated:v4.0.8
 
 - name: CALIBRE WEB AUTOMATED - Create container
   community.docker.docker_container:
     name: calibre-web-automated
-    image: crocodilestick/calibre-web-automated:v4.0.6
+    image: crocodilestick/calibre-web-automated:v4.0.8
     restart_policy: always
     state: started
     pull: false

@@ -16,12 +16,12 @@
     source: pull
     force_source: true
   vars:
-    image: ghcr.io/linuxserver/bazarr:1.6.1
+    image: ghcr.io/linuxserver/bazarr:1.6.2
 
 - name: BAZARR - Create container
   community.docker.docker_container:
     name: bazarr
-    image: ghcr.io/linuxserver/bazarr:1.6.1
+    image: ghcr.io/linuxserver/bazarr:1.6.2
     restart_policy: always
     state: started
     pull: false
