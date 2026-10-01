@@ -14,12 +14,12 @@
     source: pull
     force_source: true
   vars:
-    image: redis:7.4-alpine
+    image: redis:8.10-alpine
 
 - name: REDIS - Create container
   community.docker.docker_container:
     name: redis
-    image: redis:7.4-alpine
+    image: redis:8.10-alpine
     restart_policy: always
     state: started
     pull: false
