@@ -43,6 +43,7 @@ containers:
   - pubgolf-backend
   - pubgolf-frontend
   - races-server
+  - house
   - wedding-db
   - wedding-db-backup
   - wedding
