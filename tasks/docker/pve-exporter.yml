@@ -12,12 +12,12 @@
     source: pull
     force_source: true
   vars:
-    image: prompve/prometheus-pve-exporter:3.10.0
+    image: prompve/prometheus-pve-exporter:3.10.1
 
 - name: PVE-EXPORTER - Create container
   community.docker.docker_container:
     name: pve-exporter
-    image: prompve/prometheus-pve-exporter:3.10.0
+    image: prompve/prometheus-pve-exporter:3.10.1
     restart_policy: always
     state: started
     pull: false
