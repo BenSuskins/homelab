@@ -16,12 +16,12 @@
     source: pull
     force_source: true
   vars:
-    image: ghcr.io/cleanuparr/cleanuparr:2.10.9
+    image: ghcr.io/cleanuparr/cleanuparr:2.10.11
 
 - name: CLEANUPARR - Create container
   community.docker.docker_container:
     name: cleanuparr
-    image: ghcr.io/cleanuparr/cleanuparr:2.10.9
+    image: ghcr.io/cleanuparr/cleanuparr:2.10.11
     restart_policy: always
     state: started
     pull: false
