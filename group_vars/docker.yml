@@ -35,17 +35,11 @@ containers:
   # Apps
   - display
   - family-hub
-  # - marginalia-postgres
-  # - marginalia-api
-  # - marginalia-worker-metadata
-  # - marginalia-worker-import
-  # - marginalia-worker-reviews
   - pubgolf-backend
   - pubgolf-frontend
   - races-server
   - house
   - wedding-db
-  - wedding-db-backup
   - wedding
   - trek
   # Infrastructure
