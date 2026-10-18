@@ -165,6 +165,28 @@ struct AppStateHistoryTests {
         #expect(deep == DispatchableWorkflow.allCases.count * 2)
     }
 
+    @Test("a pull during a shallow poll still fetches full history")
+    func invalidationDuringPollFetchesHistory() async {
+        let transport = FakeTransport()
+        stubRepository(transport)
+        let state = makeState(transport)
+        await state.refresh()
+
+        let gate = RequestGate()
+        transport.gate = gate
+        let poll = Task { await state.refresh() }
+        await gate.waitUntilEntered()
+        state.invalidateHistory()
+        let pull = Task { await state.refresh() }
+        await gate.open()
+        await poll.value
+        await pull.value
+
+        let deep = transport.descriptions.filter { $0.contains("per_page=20") }.count
+        #expect(deep == DispatchableWorkflow.allCases.count * 2)
+        #expect(state.runHistory(for: .update)?.runs.count == 3)
+    }
+
     @Test("staleness is measured, not guessed")
     func historyStaleness() {
         let now = Date()

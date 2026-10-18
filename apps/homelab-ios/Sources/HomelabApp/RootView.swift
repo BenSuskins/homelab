@@ -51,6 +51,7 @@ private struct SignedInView: View {
     let state: AppState
 
     @Environment(Session.self) private var session
+    @Environment(\.scenePhase) private var scenePhase
     @Environment(\.palette) private var palette
 
     var body: some View {
@@ -71,7 +72,11 @@ private struct SignedInView: View {
         .environment(state)
         .toolbarBackground(palette.canvas, for: .tabBar)
         .toolbarBackground(.visible, for: .tabBar)
-        .task { state.start() }
+        .task(id: scenePhase) {
+            guard scenePhase == .active else { return }
+            state.start()
+            await session.refresh()
+        }
         // A grant revoked on github.com shows up as a 401 on the next poll;
         // drop to sign-in rather than sitting behind a permanent error.
         .onChange(of: state.lastFailure) { _, failure in

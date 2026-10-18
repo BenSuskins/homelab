@@ -6,6 +6,7 @@ import Foundation
 /// for real. Nothing is stubbed except the network boundary itself.
 final class FakeTransport: GitHubTransport, @unchecked Sendable {
     private let lock = NSLock()
+    var gate: RequestGate?
     private var responses: [(matches: @Sendable (GitHubRequest) -> Bool, result: Result<Data, GitHubFailure>)] = []
     private var recorded: [GitHubRequest] = []
 
@@ -59,6 +60,8 @@ final class FakeTransport: GitHubTransport, @unchecked Sendable {
             return match?.result ?? .success(Self.emptyResponse(for: request))
         }
 
+        await gate?.wait()
+
         switch result {
         case .success(let data): return data
         case .failure(let failure): throw failure
@@ -73,5 +76,31 @@ final class FakeTransport: GitHubTransport, @unchecked Sendable {
         case .graphQL: Data(Samples.noPullRequests.utf8)
         case .rest: Data(Samples.noWorkflowRuns.utf8)
         }
+    }
+}
+
+actor RequestGate {
+    private var isOpen = false
+    private var entered = false
+    private var waiting: [CheckedContinuation<Void, Never>] = []
+    private var observers: [CheckedContinuation<Void, Never>] = []
+
+    func wait() async {
+        guard !isOpen else { return }
+        entered = true
+        observers.forEach { $0.resume() }
+        observers.removeAll()
+        await withCheckedContinuation { waiting.append($0) }
+    }
+
+    func waitUntilEntered() async {
+        guard !entered else { return }
+        await withCheckedContinuation { observers.append($0) }
+    }
+
+    func open() {
+        isOpen = true
+        waiting.forEach { $0.resume() }
+        waiting.removeAll()
     }
 }

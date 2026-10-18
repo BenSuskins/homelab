@@ -2,6 +2,8 @@ import Foundation
 
 extension AppState {
     public func start() {
+        guard pollingTask == nil else { return }
+        invalidateHistory()
         Task { await notifier.requestAuthorization() }
         reconcileLaunchAtLogin()
         restartPolling()
@@ -32,38 +34,53 @@ extension AppState {
     }
 
     public func refresh() async {
-        guard !isRefreshing else { return }
+        if let refreshTask {
+            await refreshTask.value
+            return
+        }
+        let task = Task {
+            await performRefresh()
+            refreshTask = nil
+        }
+        refreshTask = task
+        await task.value
+    }
+
+    private func performRefresh() async {
         isRefreshing = true
         defer { isRefreshing = false }
 
-        let wantsHistory = Self.isHistoryStale(historyRefreshedAt)
+        while true {
+            let revision = historyRevision
+            let wantsHistory = Self.isHistoryStale(historyRefreshedAt)
+            do {
+                let histories = try await fetchRuns(limit: wantsHistory ? Self.historyDepth : 1)
+                let pullRequests = try await client.openPullRequests()
+                guard revision == historyRevision else { continue }
+                lastFailure = nil
 
-        do {
-            let histories = try await fetchRuns(limit: wantsHistory ? Self.historyDepth : 1)
-            let pullRequests = try await client.openPullRequests()
-            lastFailure = nil
+                if wantsHistory {
+                    history = ActivityHistory(histories: histories, lastRefreshedAt: Date())
+                    historyRefreshedAt = Date()
+                }
 
-            if wantsHistory {
-                history = ActivityHistory(histories: histories, lastRefreshedAt: Date())
-                historyRefreshedAt = Date()
-            }
+                var runs: [DispatchableWorkflow: WorkflowRunSummary] = [:]
+                for entry in histories {
+                    runs[entry.workflow] = entry.latest
+                }
 
-            var runs: [DispatchableWorkflow: WorkflowRunSummary] = [:]
-            for entry in histories {
-                runs[entry.workflow] = entry.latest
-            }
-
-            apply(
-                StatusSnapshot.make(
-                    runs: runs,
-                    pullRequests: pullRequests,
-                    lastRefreshedAt: Date()
+                apply(
+                    StatusSnapshot.make(
+                        runs: runs,
+                        pullRequests: pullRequests,
+                        lastRefreshedAt: Date()
+                    )
                 )
-            )
-        } catch {
-            // Keep the last good data on screen; a failed poll is not a reason
-            // to blank the display.
-            record(error)
+            } catch {
+                guard revision == historyRevision else { continue }
+                record(error)
+            }
+            return
         }
     }
 
@@ -71,6 +88,7 @@ extension AppState {
     /// what pull-to-refresh means, and what a dispatch should do so the new run
     /// appears in its own history rather than two minutes later.
     public func invalidateHistory() {
+        historyRevision += 1
         historyRefreshedAt = nil
     }
 

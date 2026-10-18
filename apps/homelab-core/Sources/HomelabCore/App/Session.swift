@@ -74,6 +74,14 @@ public final class Session {
         return false
     }
 
+    public func refresh() async {
+        guard let appState else { return }
+        async let status: Void = appState.refresh()
+        async let health: Void = healthMonitor.refresh()
+        async let logs: Void = logMonitor.refresh()
+        _ = await (status, health, logs)
+    }
+
     public func restore() async {
         // Only ever runs the once. A scene that reconnects re-fires the `.task`
         // that calls this, and without the guard that would wipe a device-code

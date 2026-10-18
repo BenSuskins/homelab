@@ -35,6 +35,7 @@ struct PullRequestsView: View {
             .padding(.horizontal, Metrics.gutter)
             .padding(.bottom, 28)
         }
+        .scrollBounceBehavior(.always, axes: .vertical)
         .scrollIndicators(.hidden)
         .navigationTitle("Pull requests")
         .navigationBarTitleDisplayMode(.large)

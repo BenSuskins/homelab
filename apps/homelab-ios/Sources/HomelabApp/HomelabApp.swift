@@ -53,17 +53,19 @@ struct HomelabApp: App {
                     // whatever we intend (ADR-0005).
                     switch phase {
                     case .active:
-                        session.appState?.start()
                         // Coming back from Safari with the code typed in is the
                         // expected path through sign-in, and being suspended
                         // over there stops the poll mid-flight. Pick it up
                         // again straight away rather than after the interval.
                         session.resumeSignIn()
-                    case .background, .inactive:
+                    case .background:
                         session.appState?.stop()
+                        session.logMonitor.stopTail()
                         // Hand the widget the freshest snapshot on the way out;
                         // this is the moment it is most likely to be looked at.
                         WidgetCenter.shared.reloadAllTimelines()
+                    case .inactive:
+                        break
                     @unknown default:
                         break
                     }

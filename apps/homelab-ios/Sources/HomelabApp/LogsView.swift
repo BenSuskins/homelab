@@ -44,6 +44,7 @@ struct LogsView: View {
             .padding(.horizontal, Metrics.gutter)
             .padding(.bottom, 28)
         }
+        .scrollBounceBehavior(.always, axes: .vertical)
         .scrollIndicators(.hidden)
         .navigationTitle("Logs")
         .navigationBarTitleDisplayMode(.large)

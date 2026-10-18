@@ -20,10 +20,11 @@ public final class HealthMonitor {
     public private(set) var failure: PrometheusFailure?
 
     /// How far back the charts look. Setting it does not fetch — the view calls
-    /// `refresh()`, so a fast double-tap on the picker cannot leave two fetches
-    /// racing to write the same history.
+    /// `refresh()`. A change during a refresh loads the latest window before
+    /// the refresh completes.
     public var window: MetricWindow = .sixHours
 
+    private var refreshTask: Task<Void, Never>?
     private let client: PrometheusClient
     private let cache: HealthCache?
 
@@ -49,26 +50,42 @@ public final class HealthMonitor {
     }
 
     public func refresh() async {
-        guard !isRefreshing else { return }
+        if let refreshTask {
+            await refreshTask.value
+            return
+        }
+        let task = Task {
+            await performRefresh()
+            refreshTask = nil
+        }
+        refreshTask = task
+        await task.value
+    }
+
+    private func performRefresh() async {
         isRefreshing = true
         defer { isRefreshing = false }
 
-        let window = self.window
-        do {
-            let services = try await fetchServices()
-            let history = try await fetchHistory(window: window)
+        while true {
+            let window = self.window
+            do {
+                let services = try await fetchServices()
+                let history = try await fetchHistory(window: window)
+                guard window == self.window else { continue }
 
-            self.history = history
-            snapshot = HealthSnapshot(
-                services: services,
-                hosts: history.currentHosts,
-                lastRefreshedAt: Date()
-            )
-            cache?.save(snapshot)
-            failure = nil
-        } catch {
-            // Keep whatever was last seen on screen, as the runs list does.
-            failure = error
+                self.history = history
+                snapshot = HealthSnapshot(
+                    services: services,
+                    hosts: history.currentHosts,
+                    lastRefreshedAt: Date()
+                )
+                cache?.save(snapshot)
+                failure = nil
+            } catch {
+                guard window == self.window else { continue }
+                failure = error
+            }
+            return
         }
     }
 

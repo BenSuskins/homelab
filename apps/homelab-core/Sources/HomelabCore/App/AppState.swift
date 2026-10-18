@@ -31,6 +31,8 @@ public final class AppState {
     public let loginItem: any LoginItemControlling
     public let launchAtLoginPreference: LaunchAtLoginPreference
     public let writeAuthorisation: any WriteAuthorising
+    var refreshTask: Task<Void, Never>?
+    var historyRevision = 0
     var pollingTask: Task<Void, Never>?
     /// When the deep page of runs was last fetched. A poll during an active run
     /// comes round every ten seconds and history does not change that fast, so

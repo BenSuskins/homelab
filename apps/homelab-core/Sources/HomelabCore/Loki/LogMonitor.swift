@@ -42,6 +42,7 @@ public final class LogMonitor {
     public var selectedLevel: LogLevel?
     public var search: String = ""
 
+    private var refreshTask: Task<Void, Never>?
     private let client: LokiClient
     private var tailTask: Task<Void, Never>?
 
@@ -96,38 +97,52 @@ public final class LogMonitor {
     }
 
     public func refresh() async {
-        guard !isRefreshing else { return }
+        if let refreshTask {
+            await refreshTask.value
+            return
+        }
+        let task = Task {
+            await performRefresh()
+            refreshTask = nil
+        }
+        refreshTask = task
+        await task.value
+    }
+
+    private func performRefresh() async {
         isRefreshing = true
         defer { isRefreshing = false }
 
-        let end = Date()
-        let start = end.addingTimeInterval(-range)
+        while true {
+            let query = self.query
+            let range = self.range
+            let end = Date()
+            let start = end.addingTimeInterval(-range)
+            do {
+                async let hosts = client.labelValues("host", start: start, end: end)
+                async let containers = client.labelValues("container", start: start, end: end)
+                let entries = try await client.queryRange(
+                    query, start: start, end: end, limit: Self.lineLimit
+                )
+                let fetchedHosts = (try? await hosts) ?? snapshot.hosts
+                let fetchedContainers = (try? await containers) ?? snapshot.containers
+                guard query == self.query, range == self.range else { continue }
 
-        do {
-            // Over the same window as the entries, so the pickers cannot offer
-            // a container the query will not return and cannot omit one it will.
-            async let hosts = client.labelValues("host", start: start, end: end)
-            async let containers = client.labelValues("container", start: start, end: end)
-            let entries = try await client.queryRange(
-                query,
-                start: start,
-                end: end,
-                limit: Self.lineLimit
-            )
-            snapshot = LogSnapshot(
-                entries: entries,
-                // The pickers are a convenience and the lines are the point, so
-                // a label read that fails keeps the last known values rather
-                // than emptying the screen.
-                hosts: (try? await hosts) ?? snapshot.hosts,
-                containers: (try? await containers) ?? snapshot.containers,
-                lastRefreshedAt: Date()
-            )
-            failure = nil
-        } catch let error as LokiFailure {
-            failure = error
-        } catch {
-            failure = .malformedResponse(String(describing: error))
+                snapshot = LogSnapshot(
+                    entries: entries,
+                    hosts: fetchedHosts,
+                    containers: fetchedContainers,
+                    lastRefreshedAt: Date()
+                )
+                failure = nil
+            } catch let error as LokiFailure {
+                guard query == self.query, range == self.range else { continue }
+                failure = error
+            } catch {
+                guard query == self.query, range == self.range else { continue }
+                failure = .malformedResponse(String(describing: error))
+            }
+            return
         }
     }
 

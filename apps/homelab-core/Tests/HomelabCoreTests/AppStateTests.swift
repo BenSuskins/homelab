@@ -94,6 +94,52 @@ struct AppStateTests {
         #expect(state.snapshot.errorMessage == nil)
     }
 
+    @Test("a pull during a poll waits for fresh data")
+    func overlappingRefreshWaitsForData() async {
+        let transport = FakeTransport()
+        stubHealthyRepository(transport)
+        let gate = RequestGate()
+        transport.gate = gate
+        let state = makeState(transport)
+        let poll = Task { await state.refresh() }
+        await gate.waitUntilEntered()
+
+        var returnedBeforeData = false
+        var pull: Task<Void, Never>?
+        await withCheckedContinuation { started in
+            pull = Task { @MainActor in
+                started.resume()
+                await state.refresh()
+                returnedBeforeData = state.snapshot.lastRefreshedAt == nil
+            }
+        }
+        await gate.open()
+        await poll.value
+        await pull?.value
+
+        #expect(returnedBeforeData == false)
+    }
+
+    @Test("a cancelled caller does not cancel a shared refresh")
+    func cancelledCallerKeepsRefresh() async {
+        let transport = FakeTransport()
+        stubHealthyRepository(transport)
+        let gate = RequestGate()
+        transport.gate = gate
+        let state = makeState(transport)
+        let first = Task { await state.refresh() }
+        await gate.waitUntilEntered()
+        first.cancel()
+        let second = Task { await state.refresh() }
+        await gate.open()
+        await first.value
+        await second.value
+
+        #expect(state.snapshot.lastRefreshedAt != nil)
+        #expect(state.lastFailure == nil)
+        #expect(transport.requests.count == DispatchableWorkflow.allCases.count + 1)
+    }
+
     @Test("keeps the last good data on screen when a refresh fails")
     func failedRefreshKeepsLastGoodData() async {
         let transport = FakeTransport()

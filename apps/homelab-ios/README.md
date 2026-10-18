@@ -46,6 +46,10 @@ Nothing on any screen is a system list or a form. The palette, the type scale
 and the spacing come from `HomelabCore/Design`, shared with the widgets so the
 two cannot drift.
 
+All four screens refresh on launch and return from the background. Pull to
+refresh also works on an empty screen. Each pull waits for fresh data, including
+any window or filter change that occurs during the request.
+
 ## What it needs before it will run
 
 1. **A GitHub OAuth app.** <https://github.com/settings/developers> → New OAuth
