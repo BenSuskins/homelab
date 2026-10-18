@@ -36,6 +36,8 @@
       OIDC_REDIRECT_URL: "https://hub.{{ domain }}/auth/callback"
       SESSION_SECRET: "{{ SESSION_SECRET }}"
       SESSION_ENCRYPTION_KEY: "{{ SESSION_ENCRYPTION_KEY }}"
+      HUXLEY_ACCESS_TOKEN: "{{ HUB_HUXLEY_ACCESS_TOKEN }}"
+      GOOGLE_MAPS_API_KEY: "{{ HUB_GOOGLE_MAPS_API_KEY }}"
       OIDC_CLIENT_ID: "family-hub"
       DATABASE_PATH: /data/family-hub.db
 
