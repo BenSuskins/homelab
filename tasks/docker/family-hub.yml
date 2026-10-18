@@ -38,6 +38,10 @@
       SESSION_ENCRYPTION_KEY: "{{ SESSION_ENCRYPTION_KEY }}"
       HUXLEY_ACCESS_TOKEN: "{{ HUB_HUXLEY_ACCESS_TOKEN }}"
       GOOGLE_MAPS_API_KEY: "{{ HUB_GOOGLE_MAPS_API_KEY }}"
+      APNS_KEY_ID: "{{ HUB_APNS_KEY_ID }}"
+      APNS_TEAM_ID: "{{ HUB_APNS_TEAM_ID }}"
+      APNS_TOPIC: "{{ HUB_APNS_TOPIC }}"
+      APNS_KEY_PATH: /data/apns.p8
       OIDC_CLIENT_ID: "family-hub"
       DATABASE_PATH: /data/family-hub.db
 
