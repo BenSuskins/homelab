@@ -16,12 +16,12 @@
     source: pull
     force_source: true
   vars:
-    image: ghcr.io/seerr-team/seerr:v3.5.0
+    image: ghcr.io/seerr-team/seerr:v3.5.1
 
 - name: SEERR - Create container
   community.docker.docker_container:
     name: seerr
-    image: ghcr.io/seerr-team/seerr:v3.5.0
+    image: ghcr.io/seerr-team/seerr:v3.5.1
     restart_policy: always
     state: started
     pull: false
