@@ -14,10 +14,18 @@ struct PullRequestsView: View {
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: Metrics.sectionSpacing) {
-                if state.snapshot.pullRequests.isEmpty {
+                if let error = state.snapshot.errorMessage {
+                    RequestFailure(message: error) { await state.refresh() }
+                }
+                if state.snapshot.lastRefreshedAt == nil {
+                    if state.isRefreshing { ProgressView("Loading pull requests…") }
+                    else if state.snapshot.errorMessage == nil {
+                        EmptyState(title: "Pull requests not loaded", message: "Refresh to read GitHub.")
+                    }
+                } else if state.snapshot.pullRequests.isEmpty {
                     EmptyState(
                         title: "No open pull requests",
-                        message: "Renovate will be along shortly.",
+                        message: "GitHub reports no open pull requests.",
                         symbol: "checkmark.circle",
                         tint: palette.positive
                     )
@@ -94,14 +102,17 @@ private struct PullRequestCard: View {
 
     @Environment(AppState.self) private var state
     @Environment(\.palette) private var palette
-    @Environment(\.openURL) private var openURL
 
     var body: some View {
         Card {
             VStack(alignment: .leading, spacing: 10) {
+                NavigationLink {
+                    PullRequestDescriptionView(pullRequest: pullRequest)
+                        .screenBackground()
+                } label: {
                 HStack(alignment: .top, spacing: 10) {
                     Image(systemName: symbol)
-                        .font(.system(size: 13, weight: .medium))
+                        .font(Typeface.caption)
                         .foregroundStyle(tint)
                         .frame(width: 16)
 
@@ -109,12 +120,11 @@ private struct PullRequestCard: View {
                         Text(pullRequest.title)
                             .font(Typeface.body)
                             .foregroundStyle(palette.textPrimary)
-                            .lineLimit(2)
                             .multilineTextAlignment(.leading)
 
                         HStack(spacing: 6) {
                             Text("#\(pullRequest.number)")
-                                .font(.system(size: 11, weight: .medium).monospacedDigit())
+                                .font(Typeface.footnote.monospacedDigit())
                             Text(pullRequest.authorLogin)
                                 .lineLimit(1)
                             Text("·")
@@ -124,8 +134,11 @@ private struct PullRequestCard: View {
                         .foregroundStyle(palette.textTertiary)
                     }
 
-                    Spacer(minLength: 0)
+                        Spacer(minLength: 0)
+                    }
+                    .frame(minHeight: 44, alignment: .top)
                 }
+                .buttonStyle(.plain)
 
                 HStack(spacing: 6) {
                     if pullRequest.isDraft {
@@ -148,8 +161,6 @@ private struct PullRequestCard: View {
                 }
             }
         }
-        .contentShape(.rect)
-        .onTapGesture { openURL(pullRequest.url) }
     }
 
     /// A button rather than a swipe action. The swipe was invisible — nothing
@@ -163,17 +174,18 @@ private struct PullRequestCard: View {
             HStack(spacing: 5) {
                 Image(systemName: "arrow.triangle.merge")
                     .font(.system(size: 10, weight: .bold))
-                Text("Squash · deploys")
+                Text("Squash merge · deploys")
                     .font(Typeface.footnote)
             }
             .foregroundStyle(palette.accent)
             .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .frame(minHeight: 44)
             .background(
                 Capsule().fill(palette.accentMuted)
             )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Squash merge #\(pullRequest.number). Starts deployment.")
     }
 
     private var symbol: String {

@@ -28,7 +28,7 @@ public struct WorkflowRunSummary: Equatable, Sendable, Codable {
     }
 }
 
-public enum MergeReadiness: String, Equatable, Sendable, Codable {
+public enum MergeReadiness: String, Hashable, Sendable, Codable {
     case mergeable
     case conflicting
     case unknown
@@ -42,7 +42,7 @@ public enum MergeReadiness: String, Equatable, Sendable, Codable {
     }
 }
 
-public struct PullRequestSummary: Equatable, Sendable, Codable, Identifiable {
+public struct PullRequestSummary: Hashable, Sendable, Codable, Identifiable {
     public let number: Int
     public let title: String
     public let authorLogin: String
@@ -75,5 +75,16 @@ public struct PullRequestSummary: Equatable, Sendable, Codable, Identifiable {
         self.readiness = readiness
         self.createdAt = createdAt
         self.url = url
+    }
+}
+
+/// Loaded on demand so widget snapshots do not contain long descriptions.
+public struct PullRequestDescription: Equatable, Sendable {
+    public let body: String
+    public let baseBranch: String
+
+    public init(body: String, baseBranch: String) {
+        self.body = body
+        self.baseBranch = baseBranch
     }
 }

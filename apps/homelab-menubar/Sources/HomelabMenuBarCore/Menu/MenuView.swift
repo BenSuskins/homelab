@@ -28,7 +28,8 @@ public struct MenuView: View {
             }
         }
         .padding(.vertical, 8)
-        .frame(width: 320)
+        .frame(width: 340)
+        .frame(maxHeight: 720)
     }
 }
 
@@ -42,6 +43,13 @@ struct SignedInMenu: View {
             header
             Divider().padding(.vertical, 6)
 
+            if state.snapshot.lastRefreshedAt == nil {
+                Label("Waiting for GitHub status", systemImage: "clock")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 12)
+                    .frame(minHeight: 34)
+            }
             ForEach(state.snapshot.runRows) { row in
                 RunRowView(row: row)
             }
@@ -60,6 +68,10 @@ struct SignedInMenu: View {
                     .lineLimit(2)
                     .padding(.horizontal, 10)
                     .padding(.bottom, 4)
+                Button("Retry") { Task { await state.refresh() } }
+                    .font(.caption)
+                    .padding(.horizontal, 12)
+                    .frame(minHeight: 36)
             }
 
             Divider().padding(.vertical, 6)
@@ -92,15 +104,36 @@ struct SignedInMenu: View {
                 .padding(.horizontal, 12)
                 .padding(.bottom, 2)
 
-            if state.snapshot.pullRequests.isEmpty {
+            if state.snapshot.lastRefreshedAt == nil {
+                Text("Waiting for GitHub")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 2)
+            } else if state.snapshot.pullRequests.isEmpty {
                 Text("None")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
                     .padding(.horizontal, 12)
                     .padding(.bottom, 2)
             } else {
-                ForEach(state.snapshot.pullRequests) { pullRequest in
-                    PullRequestRowView(pullRequest: pullRequest)
+                ScrollView {
+                    LazyVStack(spacing: 2) {
+                        ForEach(state.snapshot.pullRequests.prefix(6)) { pullRequest in
+                            PullRequestRowView(pullRequest: pullRequest)
+                        }
+                    }
+                }
+                .frame(maxHeight: 230)
+
+                if state.snapshot.pullRequests.count > 6 {
+                    Link(destination: state.repository.browserURL.appendingPathComponent("pulls")) {
+                        Text("View all \(state.snapshot.pullRequests.count) on GitHub")
+                            .font(.caption)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .padding(.horizontal, 12)
+                    .frame(minHeight: 36)
                 }
             }
         }
@@ -199,6 +232,12 @@ struct SignInPanel: View {
                 .font(.caption2)
                 .foregroundStyle(.secondary)
             }
+            if !session.configuration.isConfigured {
+                Text("GitHub sign in is not configured for this build.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .padding(.horizontal, 12)
     }
@@ -208,6 +247,7 @@ struct DeviceCodePanel: View {
     let grant: DeviceCodeGrant
 
     @Environment(Session.self) private var session
+    @State private var hasCopied = false
     @Environment(\.openURL) private var openURL
 
     var body: some View {
@@ -223,14 +263,23 @@ struct DeviceCodePanel: View {
                 .padding(.vertical, 8)
                 .background(.quaternary, in: .rect(cornerRadius: 8))
 
-            Button {
-                openURL(grant.verificationURL)
-            } label: {
-                Label("Open github.com/login/device", systemImage: "safari")
-                    .font(.caption)
-                    .frame(maxWidth: .infinity)
+            HStack {
+                Button {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(grant.userCode, forType: .string)
+                    hasCopied = true
+                } label: {
+                    Label(hasCopied ? "Copied" : "Copy code", systemImage: hasCopied ? "checkmark" : "doc.on.doc")
+                }
+                .buttonStyle(.bordered)
+
+                Button {
+                    openURL(grant.verificationURL)
+                } label: {
+                    Label("Open GitHub", systemImage: "safari")
+                }
+                .buttonStyle(.borderedProminent)
             }
-            .buttonStyle(.bordered)
 
             HStack(spacing: 6) {
                 ProgressView().controlSize(.small)

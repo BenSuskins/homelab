@@ -5,22 +5,30 @@ struct PullRequestRowView: View {
     let pullRequest: PullRequestSummary
 
     @Environment(AppState.self) private var state
-    @Environment(\.openURL) private var openURL
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: pullRequest.isDraft ? "circle.dashed" : "arrow.trianglehead.pull")
-                .foregroundStyle(pullRequest.isDraft ? Color.secondary : Color.green)
+                .foregroundStyle(pullRequest.isDraft ? Color.secondary : (pullRequest.readiness == .conflicting ? Color.orange : Color.secondary))
                 .frame(width: 16)
 
-            VStack(alignment: .leading, spacing: 1) {
+            Button {
+                NSApp.activate(ignoringOtherApps: true)
+                openWindow(value: pullRequest)
+            } label: {
+            VStack(alignment: .leading, spacing: 3) {
                 Text("#\(pullRequest.number) \(pullRequest.title)")
-                    .font(.system(size: 12))
+                    .font(.callout)
                     .lineLimit(2)
                 Text(subtitle)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
+
+            }
+            .buttonStyle(.plain)
+            .help("Read pull request #\(pullRequest.number)")
 
             Spacer(minLength: 4)
 
@@ -32,13 +40,12 @@ struct PullRequestRowView: View {
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
-                .help("Squash merge — this deploys")
+                .accessibilityLabel("Squash merge #\(pullRequest.number). Starts deployment.")
+                .help("Squash merge #\(pullRequest.number) — starts the deployment")
             }
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 3)
-        .contentShape(.rect)
-        .onTapGesture { openURL(pullRequest.url) }
+        .padding(.vertical, 8)
     }
 
     private var subtitle: String {

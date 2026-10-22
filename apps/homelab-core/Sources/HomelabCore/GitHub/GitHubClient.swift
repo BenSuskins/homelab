@@ -89,6 +89,12 @@ public struct GitHubClient: Sendable {
         }
     }
 
+    public func pullRequestDescription(number: Int) async throws(GitHubFailure) -> PullRequestDescription {
+        let data = try await transport.send(.get("repos/\(repository.slug)/pulls/\(number)"))
+        let payload = try decode(PullRequestDescriptionPayload.self, from: data)
+        return PullRequestDescription(body: payload.body ?? "", baseBranch: payload.base.ref)
+    }
+
     static let pullRequestQuery = """
     query($owner: String!, $name: String!) {
       repository(owner: $owner, name: $name) {

@@ -18,6 +18,14 @@ struct LogsView: View {
 
     @State private var isShowingProfile = false
     @State private var inspected: LokiLogEntry?
+    @State private var heldEntries: [LokiLogEntry]?
+
+    private var displayedEntries: [LokiLogEntry] { heldEntries ?? monitor.visibleEntries }
+    private var pendingCount: Int {
+        guard let heldEntries else { return 0 }
+        let identifiers = Set(heldEntries.map(\.id))
+        return monitor.visibleEntries.filter { !identifiers.contains($0.id) }.count
+    }
 
     private var monitor: LogMonitor { session.logMonitor }
 
@@ -25,25 +33,53 @@ struct LogsView: View {
         // A binding into the monitor, for the search field only.
         @Bindable var bindable = session.logMonitor
 
+        ScrollViewReader { position in
         ScrollView {
             LazyVStack(alignment: .leading, spacing: Metrics.cardSpacing) {
-                if monitor.isOffTailnet && monitor.snapshot.entries.isEmpty {
-                    EmptyState(
-                        title: "Not connected to the tailnet",
-                        message: "Loki is reachable over Tailscale only. "
-                            + "Runs, pull requests and health still work.",
-                        symbol: "network.slash"
-                    )
+                Color.clear.frame(height: 0).id("logs-top")
+                filters
+                if let failure = monitor.failure {
+                    RequestFailure(message: failure.displayMessage) { await monitor.refresh() }
+                    if !monitor.snapshot.entries.isEmpty {
+                        OffTailnetNotice(detail: "Showing the last successful read")
+                    }
+                }
+                levels
+                summary
+                Text("Search and level counts apply to up to \(LogMonitor.lineLimit) fetched lines.")
+                    .font(Typeface.footnote).foregroundStyle(palette.textSecondary)
+                if let read = monitor.snapshot.lastRefreshedAt {
+                    Text("Read \(RelativeTime.ago(read))").font(Typeface.footnote).foregroundStyle(palette.textSecondary)
+                }
+                if monitor.snapshot.lastRefreshedAt == nil {
+                    if monitor.isRefreshing { ProgressView("Loading logs…") }
+                    else if monitor.failure == nil { Text("Logs not loaded. Pull to refresh.") }
                 } else {
-                    filters
-                    levels
-                    summary
                     entries
                 }
             }
             .padding(.horizontal, Metrics.gutter)
             .padding(.bottom, 28)
         }
+        .onScrollGeometryChange(for: Bool.self) { geometry in
+            geometry.contentOffset.y + geometry.contentInsets.top > 180
+        } action: { _, readsOlderLines in
+            if readsOlderLines && heldEntries == nil { heldEntries = monitor.visibleEntries }
+            if !readsOlderLines { heldEntries = nil }
+        }
+        .safeAreaInset(edge: .top) {
+            if pendingCount > 0 {
+                Button("\(pendingCount) new lines · Show latest") {
+                    heldEntries = nil
+                    position.scrollTo("logs-top", anchor: .top)
+                }
+                .buttonStyle(.bordered)
+                .frame(minHeight: 44)
+            }
+        }
+        }
+        .onChange(of: monitor.search) { _, _ in heldEntries = nil }
+        .onChange(of: monitor.selectedLevel) { _, _ in heldEntries = nil }
         .scrollBounceBehavior(.always, axes: .vertical)
         .scrollIndicators(.hidden)
         .navigationTitle("Logs")
@@ -162,7 +198,7 @@ struct LogsView: View {
                     size: 6,
                     isPulsing: monitor.isTailing
                 )
-                Text("Live")
+                Text(monitor.isTailing ? "Live" : "Paused")
                     .font(Typeface.footnote)
                     .foregroundStyle(
                         monitor.isTailing ? palette.textPrimary : palette.textSecondary
@@ -181,6 +217,8 @@ struct LogsView: View {
             )
         }
         .buttonStyle(.plain)
+        .frame(minHeight: 44)
+        .accessibilityLabel(monitor.isTailing ? "Pause live logs" : "Start live logs")
     }
 
     private var summary: some View {
@@ -210,11 +248,7 @@ struct LogsView: View {
 
     @ViewBuilder
     private var entries: some View {
-        if monitor.isOffTailnet {
-            OffTailnetNotice(detail: "Showing the last read — not on the tailnet")
-        }
-
-        let visible = monitor.visibleEntries
+        let visible = displayedEntries
 
         if visible.isEmpty {
             EmptyState(
@@ -257,6 +291,7 @@ struct LogsView: View {
     }
 
     private func reload() {
+        heldEntries = nil
         monitor.stopTail()
         Task { await monitor.refresh() }
     }
@@ -294,7 +329,7 @@ private struct LogRow: View {
             .padding(.trailing, 12)
 
             Image(systemName: "chevron.right")
-                .font(.system(size: 9, weight: .bold))
+                .font(Typeface.footnote)
                 .foregroundStyle(palette.textTertiary)
                 .padding(.top, 9)
                 .padding(.trailing, 10)
@@ -312,13 +347,13 @@ private struct LogRow: View {
 
             if let container = entry.container {
                 Text(container)
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(Typeface.footnote)
                     .foregroundStyle(palette.textSecondary)
             }
 
             if let host = entry.host {
                 Text(host)
-                    .font(.system(size: 10))
+                    .font(Typeface.footnote)
                     .foregroundStyle(palette.textTertiary)
             }
 
@@ -326,7 +361,7 @@ private struct LogRow: View {
 
             if record.level.isNotable {
                 Text(record.level.label)
-                    .font(.system(size: 9, weight: .bold))
+                    .font(Typeface.footnote)
                     .foregroundStyle(tint)
             }
         }
@@ -351,7 +386,7 @@ private struct LogRow: View {
             }
             if hidden > 0 {
                 Text("+\(hidden)")
-                    .font(.system(size: 9, weight: .semibold))
+                    .font(Typeface.footnote)
                     .foregroundStyle(palette.textTertiary)
             }
             Spacer(minLength: 0)
@@ -400,14 +435,14 @@ private struct LevelChip: View {
         Button(action: action) {
             HStack(spacing: 4) {
                 Text(title)
-                    .font(.system(size: 10, weight: .bold))
+                    .font(Typeface.footnote)
                 Text("\(count)")
                     .font(.system(size: 10, weight: .medium).monospacedDigit())
                     .foregroundStyle(isSelected ? tint.opacity(0.8) : palette.textTertiary)
             }
             .foregroundStyle(isSelected ? tint : palette.textSecondary)
             .padding(.horizontal, 9)
-            .padding(.vertical, 5)
+            .frame(minHeight: 44)
             .background(
                 Capsule().fill(isSelected ? tint.opacity(0.14) : palette.surfaceRaised)
             )
@@ -450,7 +485,7 @@ private struct FilterMenu: View {
         } label: {
             HStack(spacing: 5) {
                 Text(label.uppercased())
-                    .font(.system(size: 9, weight: .semibold))
+                    .font(Typeface.footnote)
                     .tracking(0.5)
                     .foregroundStyle(palette.textTertiary)
                 Text(selection ?? "All")

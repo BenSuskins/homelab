@@ -12,9 +12,8 @@ struct SignInView: View {
         ZStack {
             palette.canvas.ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                Spacer()
-
+            ScrollView {
+            VStack(spacing: 24) {
                 VStack(spacing: 14) {
                     Image(systemName: "square.stack.3d.up")
                         .font(.system(size: 34, weight: .light))
@@ -31,8 +30,6 @@ struct SignInView: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.horizontal, 24)
                 }
-
-                Spacer()
 
                 VStack(spacing: 12) {
                     if let message {
@@ -67,7 +64,14 @@ struct SignInView: View {
                     }
                     .buttonStyle(.plain)
                     .disabled(!session.configuration.isConfigured)
-                    .opacity(session.configuration.isConfigured ? 1 : 0.4)
+                    .frame(minHeight: 52)
+
+                    if !session.configuration.isConfigured {
+                        Text("GitHub sign in is not configured for this build.")
+                            .font(Typeface.footnote)
+                            .foregroundStyle(palette.textSecondary)
+                            .multilineTextAlignment(.center)
+                    }
 
                     Text("A code appears next; type it into github.com on any device.")
                         .font(Typeface.footnote)
@@ -75,7 +79,10 @@ struct SignInView: View {
                         .multilineTextAlignment(.center)
                 }
                 .padding(.horizontal, 24)
-                .padding(.bottom, 40)
+                .padding(.bottom, 24)
+            }
+            .frame(maxWidth: .infinity, minHeight: 520)
+            .padding(.vertical, 24)
             }
         }
     }
@@ -111,7 +118,7 @@ struct DeviceCodeView: View {
                 } label: {
                     VStack(spacing: 6) {
                         Text(grant.userCode)
-                            .font(.system(size: 38, weight: .bold, design: .monospaced))
+                            .font(.largeTitle.monospaced().weight(.bold))
                             .foregroundStyle(palette.textPrimary)
                             .tracking(3)
 
@@ -124,7 +131,7 @@ struct DeviceCodeView: View {
                         .foregroundStyle(hasCopied ? palette.positive : palette.textTertiary)
                     }
                     .padding(.horizontal, 22)
-                    .padding(.vertical, 14)
+                    .padding(.vertical, 18)
                     .background(
                         RoundedRectangle(cornerRadius: Metrics.corner, style: .continuous)
                             .fill(palette.surface)
@@ -135,6 +142,8 @@ struct DeviceCodeView: View {
                     )
                 }
                 .buttonStyle(.plain)
+                .frame(minHeight: 56)
+                .accessibilityLabel("Copy code \(grant.userCode)")
 
                 Button {
                     openURL(grant.verificationURL)
@@ -154,6 +163,7 @@ struct DeviceCodeView: View {
                     )
                 }
                 .buttonStyle(.plain)
+                .frame(minHeight: 52)
 
                 VStack(spacing: 6) {
                     HStack(spacing: 7) {

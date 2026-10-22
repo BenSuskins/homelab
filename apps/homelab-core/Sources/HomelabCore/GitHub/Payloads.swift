@@ -73,3 +73,12 @@ struct ViewerPayload: Decodable {
         case profileURL = "html_url"
     }
 }
+
+struct PullRequestDescriptionPayload: Decodable {
+    struct Base: Decodable {
+        let ref: String
+    }
+
+    let body: String?
+    let base: Base
+}

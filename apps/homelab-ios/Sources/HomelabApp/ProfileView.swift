@@ -64,7 +64,7 @@ struct ProfileView: View {
                 Spacer(minLength: 0)
 
                 if let url = session.viewer?.profileURL {
-                    IconButton(symbol: "arrow.up.right", tint: palette.textSecondary) {
+                    IconButton(symbol: "arrow.up.right", label: "Open GitHub profile", tint: palette.textSecondary) {
                         openURL(url)
                     }
                 }
@@ -128,7 +128,7 @@ struct ProfileView: View {
                     Note(
                         symbol: "faceid",
                         title: "Writes are behind Face ID",
-                        detail: "Triggering, cancelling and merging all deploy. Reads are not gated."
+                        detail: "Run and Merge can deploy. Cancel stops a workflow. Reads are not gated."
                     )
                     Note(
                         symbol: "network",
@@ -200,16 +200,18 @@ private struct DetailRow: View {
     let value: String
 
     var body: some View {
-        HStack {
-            Text(label)
-                .font(Typeface.caption)
-                .foregroundStyle(palette.textSecondary)
-            Spacer(minLength: 12)
-            Text(value)
-                .font(.system(size: 13, weight: .medium).monospacedDigit())
-                .foregroundStyle(palette.textPrimary)
-                .lineLimit(1)
-                .truncationMode(.middle)
+        ViewThatFits(in: .horizontal) {
+            HStack {
+                Text(label).font(Typeface.caption).foregroundStyle(palette.textSecondary)
+                Spacer(minLength: 12)
+                Text(value).font(Typeface.body.monospacedDigit()).foregroundStyle(palette.textPrimary)
+                    .lineLimit(1).truncationMode(.middle)
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                Text(label).font(Typeface.caption).foregroundStyle(palette.textSecondary)
+                Text(value).font(Typeface.body.monospacedDigit()).foregroundStyle(palette.textPrimary)
+                    .textSelection(.enabled)
+            }
         }
     }
 }

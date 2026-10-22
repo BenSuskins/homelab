@@ -8,7 +8,7 @@ import WidgetKit
 struct HomelabHealthWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "HomelabHealth", provider: HealthProvider()) { entry in
-            WidgetSurface { HealthWidgetView(entry: entry) }
+            WidgetSurface(route: "health") { HealthWidgetView(entry: entry) }
         }
         .configurationDisplayName("Service health")
         .description("How many monitored endpoints are up, and which are not.")
@@ -41,10 +41,11 @@ struct HealthProvider: TimelineProvider {
     }
 
     func getSnapshot(in context: Context, completion: @escaping (HealthEntry) -> Void) {
+        let cached = WidgetData.healthCache.load()
         completion(HealthEntry(
             date: Date(),
-            snapshot: WidgetData.healthCache.load() ?? Self.sample,
-            isStale: false
+            snapshot: cached ?? HealthSnapshot(),
+            isStale: cached == nil
         ))
     }
 
@@ -80,8 +81,9 @@ struct HealthWidgetView: View {
     @Environment(\.widgetFamily) private var family
     @Environment(\.palette) private var palette
 
-    private var isHealthy: Bool { entry.snapshot.downCount == 0 }
-    private var tint: Color { isHealthy ? palette.positive : palette.negative }
+    private var hasReading: Bool { !entry.snapshot.services.isEmpty }
+    private var isHealthy: Bool { hasReading && entry.snapshot.downCount == 0 }
+    private var tint: Color { hasReading ? (isHealthy ? palette.positive : palette.negative) : palette.textSecondary }
 
     var body: some View {
         switch family {
@@ -98,7 +100,7 @@ struct HealthWidgetView: View {
 
     private var small: some View {
         VStack(alignment: .leading, spacing: 6) {
-            WidgetHeader(title: "Services", tint: tint, isStale: entry.isStale)
+            WidgetHeader(title: "Services", tint: tint, isStale: entry.isStale, refreshedAt: entry.snapshot.lastRefreshedAt)
 
             if entry.snapshot.services.isEmpty {
                 Text("No reading")
@@ -111,7 +113,7 @@ struct HealthWidgetView: View {
                 Text("\(entry.snapshot.upCount)/\(entry.snapshot.services.count)")
                     .font(.system(size: 26, weight: .semibold).monospacedDigit())
                     .foregroundStyle(palette.textPrimary)
-                Text(isHealthy ? "all up" : "\(entry.snapshot.downCount) down")
+                Text(isHealthy ? "all up" : (hasReading ? "\(entry.snapshot.downCount) down" : "No reading"))
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(isHealthy ? palette.textSecondary : palette.negative)
             }
@@ -133,14 +135,21 @@ struct HealthWidgetView: View {
 
     private var medium: some View {
         VStack(alignment: .leading, spacing: 8) {
-            WidgetHeader(title: "Service health", tint: tint, isStale: entry.isStale)
+            WidgetHeader(title: "Service health", tint: tint, isStale: entry.isStale, refreshedAt: entry.snapshot.lastRefreshedAt)
 
             HStack(alignment: .top, spacing: 14) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("\(entry.snapshot.upCount)/\(entry.snapshot.services.count)")
-                        .font(.system(size: 26, weight: .semibold).monospacedDigit())
-                        .foregroundStyle(palette.textPrimary)
-                    Text(isHealthy ? "all up" : "\(entry.snapshot.downCount) down")
+                    if hasReading {
+                        Text("\(entry.snapshot.upCount)/\(entry.snapshot.services.count)")
+                            .font(.system(size: 26, weight: .semibold).monospacedDigit())
+                            .foregroundStyle(palette.textPrimary)
+                    } else {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("No reading").font(.headline).foregroundStyle(palette.textSecondary)
+                            Text("Open the app on the tailnet").font(.caption2).foregroundStyle(palette.textSecondary)
+                        }
+                    }
+                    Text(isHealthy ? "all up" : (hasReading ? "\(entry.snapshot.downCount) down" : ""))
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(isHealthy ? palette.textSecondary : palette.negative)
                 }
@@ -194,7 +203,7 @@ struct HealthWidgetView: View {
     private var rectangular: some View {
         VStack(alignment: .leading, spacing: 1) {
             HStack(spacing: 4) {
-                Image(systemName: isHealthy ? "checkmark.circle" : "exclamationmark.triangle.fill")
+                Image(systemName: !hasReading ? "questionmark.circle" : (isHealthy ? "checkmark.circle" : "exclamationmark.triangle.fill"))
                     .font(.system(size: 11, weight: .medium))
                 Text("Services")
                     .font(.system(size: 12, weight: .semibold))

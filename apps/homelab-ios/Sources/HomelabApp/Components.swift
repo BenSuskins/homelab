@@ -1,18 +1,8 @@
 import HomelabCore
 import SwiftUI
 
-// The vocabulary every screen is assembled from. Nothing here knows what a
-// workflow or a host is — these are surfaces, labels and tiles, and the screens
-// put domain values into them.
-//
-// The rule they all follow: one card style, one hairline, one accent. Colour
-// means status and nothing else, so a screen with nothing wrong is almost
-// monochrome and the one red dot on it is impossible to miss.
+// Shared layout and controls for the flat dashboard.
 
-// MARK: Surfaces
-
-/// The standard card: a surface, a hairline, and the same corner radius
-/// everywhere. Every block of content on every screen is one of these.
 struct Card<Content: View>: View {
     @Environment(\.palette) private var palette
 
@@ -28,20 +18,11 @@ struct Card<Content: View>: View {
         content
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: Metrics.corner, style: .continuous)
-                    .fill(palette.surface)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: Metrics.corner, style: .continuous)
-                    .strokeBorder(palette.border, lineWidth: Metrics.hairline)
-            )
+            .padding(.vertical, 12)
+            .overlay(alignment: .bottom) { Divider().overlay(palette.border) }
     }
 }
 
-/// A section header. Uppercase, tracked, secondary — it labels the block below
-/// without competing with it, and an optional trailing slot carries a count or
-/// a control.
 struct SectionHeader<Trailing: View>: View {
     @Environment(\.palette) private var palette
 
@@ -55,9 +36,8 @@ struct SectionHeader<Trailing: View>: View {
 
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
-            Text(title.uppercased())
+            Text(title)
                 .font(Typeface.sectionLabel)
-                .tracking(0.8)
                 .foregroundStyle(palette.textTertiary)
             Spacer(minLength: 8)
             trailing
@@ -72,16 +52,12 @@ extension SectionHeader where Trailing == EmptyView {
     }
 }
 
-/// The page background. Applied once per screen so the canvas colour is behind
-/// the scroll view, the safe areas and the navigation bar alike.
 struct ScreenBackground: ViewModifier {
     @Environment(\.palette) private var palette
 
     func body(content: Content) -> some View {
         content
             .background(palette.canvas.ignoresSafeArea())
-            .toolbarBackground(palette.canvas, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
     }
 }
 
@@ -91,14 +67,12 @@ extension View {
 
 // MARK: Indicators
 
-/// A status dot, optionally pulsing while something is in flight. The pulse is
-/// the only animation in the app: it marks the one thing that is changing while
-/// you watch it.
 struct StatusDot: View {
     let colour: Color
     var size: CGFloat = 8
     var isPulsing: Bool = false
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isExpanded = false
 
     var body: some View {
@@ -106,7 +80,7 @@ struct StatusDot: View {
             .fill(colour)
             .frame(width: size, height: size)
             .overlay {
-                if isPulsing {
+                if isPulsing && !reduceMotion {
                     Circle()
                         .stroke(colour, lineWidth: 1)
                         .scaleEffect(isExpanded ? 2.2 : 1)
@@ -117,12 +91,11 @@ struct StatusDot: View {
                         )
                 }
             }
-            .onAppear { isExpanded = isPulsing }
+            .onAppear { isExpanded = isPulsing && !reduceMotion }
+            .accessibilityHidden(true)
     }
 }
 
-/// A small capsule of text. Used for counts, states and filters — never for
-/// anything tappable unless it is given an action.
 struct Pill: View {
     @Environment(\.palette) private var palette
 
@@ -133,7 +106,7 @@ struct Pill: View {
     var body: some View {
         HStack(spacing: 4) {
             if let icon {
-                Image(systemName: icon).font(.system(size: 9, weight: .bold))
+                Image(systemName: icon).font(Typeface.footnote.weight(.bold))
             }
             Text(text)
                 .font(Typeface.footnote)
@@ -147,15 +120,10 @@ struct Pill: View {
     }
 }
 
-/// An arrow and a percentage, for a number that has moved. Silent below a
-/// threshold, because a dashboard that flags every 2% wobble trains you to
-/// ignore it.
 struct TrendBadge: View {
     @Environment(\.palette) private var palette
 
     let change: Double?
-    /// Whether going up is bad. True for durations and utilisation, false for
-    /// anything where more is better.
     var risingIsBad: Bool = true
     var threshold: Double = 0.1
 
@@ -165,7 +133,7 @@ struct TrendBadge: View {
             let bad = rising == risingIsBad
             HStack(spacing: 2) {
                 Image(systemName: rising ? "arrow.up.right" : "arrow.down.right")
-                    .font(.system(size: 8, weight: .bold))
+                    .font(Typeface.footnote.weight(.bold))
                 Text("\(Int((abs(change) * 100).rounded()))%")
                     .font(Typeface.footnote)
             }
@@ -176,8 +144,6 @@ struct TrendBadge: View {
 
 // MARK: Tiles
 
-/// One number and its label. Four of these across is the status strip every
-/// screen opens with, which is the `Status` row from the dashboard style guide.
 struct StatTile: View {
     @Environment(\.palette) private var palette
 
@@ -191,11 +157,8 @@ struct StatTile: View {
             Text(value)
                 .font(Typeface.metric(20))
                 .foregroundStyle(tint ?? palette.textPrimary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-            Text(label.uppercased())
+            Text(label)
                 .font(Typeface.sectionLabel)
-                .tracking(0.6)
                 .foregroundStyle(palette.textTertiary)
                 .lineLimit(1)
             if let detail {
@@ -206,17 +169,11 @@ struct StatTile: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: Metrics.innerCorner, style: .continuous)
-                .fill(palette.surfaceRaised)
-        )
     }
 }
 
-/// The strip of tiles itself, so no screen has to remember the spacing.
 struct StatStrip<Content: View>: View {
+    @Environment(\.dynamicTypeSize) private var textSize
     private let content: Content
 
     init(@ViewBuilder content: () -> Content) {
@@ -224,60 +181,40 @@ struct StatStrip<Content: View>: View {
     }
 
     var body: some View {
-        HStack(spacing: 8) {
-            content
-        }
+        let layout = textSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 16))
+            : AnyLayout(HStackLayout(spacing: 12))
+        layout { content }
+            .padding(.vertical, 12)
     }
 }
 
 // MARK: Controls
 
-/// The segmented control the charts are scoped by. Rolled by hand rather than
-/// `Picker(.segmented)`, which cannot be tinted to the palette and brings its
-/// own idea of a background.
 struct SegmentedControl<Value: Hashable & Identifiable>: View {
     @Environment(\.palette) private var palette
 
     let values: [Value]
     let title: (Value) -> String
     let selection: Value
-    /// A closure rather than a `Binding`, because selecting a window starts a
-    /// fetch on a `@MainActor` monitor and a binding's setter is not isolated.
     let onSelect: (Value) -> Void
 
     var body: some View {
-        HStack(spacing: 2) {
+        Picker("Time range", selection: Binding(get: { selection }, set: onSelect)) {
             ForEach(values) { value in
-                let isSelected = value == selection
-                Button {
-                    onSelect(value)
-                } label: {
-                    Text(title(value))
-                        .font(Typeface.footnote)
-                        .foregroundStyle(isSelected ? palette.textPrimary : palette.textSecondary)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .fill(isSelected ? palette.surface : Color.clear)
-                        )
-                }
-                .buttonStyle(.plain)
+                Text(title(value)).tag(value)
             }
         }
-        .padding(2)
-        .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(palette.surfaceRaised)
-        )
+        .pickerStyle(.segmented)
+        .frame(minHeight: 44)
     }
 }
 
-/// The small square button that starts or stops a workflow.
 struct IconButton: View {
     @Environment(\.palette) private var palette
 
     let symbol: String
+    var label: String
     var tint: Color?
     var isEnabled: Bool = true
     let action: () -> Void
@@ -287,7 +224,7 @@ struct IconButton: View {
             Image(systemName: symbol)
                 .font(.system(size: 12, weight: .bold))
                 .foregroundStyle(isEnabled ? (tint ?? palette.textPrimary) : palette.textTertiary)
-                .frame(width: 30, height: 30)
+                .frame(width: 44, height: 44)
                 .background(
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
                         .fill(palette.surfaceRaised)
@@ -299,12 +236,10 @@ struct IconButton: View {
         }
         .buttonStyle(.plain)
         .disabled(!isEnabled)
+        .accessibilityLabel(label)
     }
 }
 
-/// The empty and unreachable states. `ContentUnavailableView` would do the job
-/// but brings system colours with it, and these show up often enough — every
-/// screen off the tailnet — to be worth drawing in the palette.
 struct EmptyState: View {
     @Environment(\.palette) private var palette
 
@@ -332,8 +267,6 @@ struct EmptyState: View {
     }
 }
 
-/// The line every tailnet-only screen shows when it is off the tailnet. One
-/// component so the wording cannot drift between Health and Logs.
 struct OffTailnetNotice: View {
     @Environment(\.palette) private var palette
 
@@ -342,7 +275,7 @@ struct OffTailnetNotice: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "network.slash")
-                .font(.system(size: 11, weight: .medium))
+                .font(Typeface.footnote)
             Text(detail)
                 .font(Typeface.caption)
             Spacer(minLength: 0)
@@ -357,8 +290,6 @@ struct OffTailnetNotice: View {
     }
 }
 
-/// A labelled row of small text, used inside cards for host readings and run
-/// metadata.
 struct Reading: View {
     @Environment(\.palette) private var palette
 
@@ -368,15 +299,30 @@ struct Reading: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 1) {
-            Text(label.uppercased())
-                .font(.system(size: 9, weight: .semibold))
+            Text(label)
+                .font(Typeface.footnote)
                 .tracking(0.5)
                 .foregroundStyle(palette.textTertiary)
             // A metric that is not reporting says so, rather than showing a
             // zero that reads like a healthy measurement.
-            Text(value ?? "—")
-                .font(.system(size: 13, weight: .medium).monospacedDigit())
+            Text(value ?? "No data")
+                .font(Typeface.caption.monospacedDigit())
                 .foregroundStyle(value == nil ? palette.textTertiary : (tint ?? palette.textPrimary))
+        }
+    }
+}
+
+struct RequestFailure: View {
+    let message: String
+    let retry: () async -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label(message, systemImage: "exclamationmark.triangle")
+                .font(Typeface.caption)
+                .foregroundStyle(.red)
+            Button("Retry") { Task { await retry() } }
+                .frame(minHeight: 44)
         }
     }
 }

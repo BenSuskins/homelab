@@ -7,7 +7,7 @@ import WidgetKit
 struct HomelabStatusWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "HomelabStatus", provider: StatusProvider()) { entry in
-            WidgetSurface { StatusWidgetView(entry: entry) }
+            WidgetSurface(route: "home") { StatusWidgetView(entry: entry) }
         }
         .configurationDisplayName("Workflows")
         .description("Update, Terraform and Clean — what each one last did.")
@@ -39,7 +39,7 @@ struct StatusProvider: TimelineProvider {
         completion(StatusEntry(
             date: Date(),
             snapshot: WidgetData.snapshotCache.load() ?? .placeholder,
-            isStale: false
+            isStale: WidgetData.snapshotCache.load()?.lastRefreshedAt == nil
         ))
     }
 
@@ -80,6 +80,9 @@ struct StatusWidgetView: View {
     @Environment(\.palette) private var palette
 
     private var glyph: GlyphState { entry.snapshot.glyph }
+    private var tint: Color {
+        entry.snapshot.lastRefreshedAt == nil ? palette.textSecondary : palette.color(for: glyph)
+    }
 
     /// The worst row is the one worth showing: the widget answers "do I need to
     /// open this?", exactly as the menu bar glyph does.
@@ -106,9 +109,13 @@ struct StatusWidgetView: View {
 
     private var small: some View {
         VStack(alignment: .leading, spacing: 6) {
-            WidgetHeader(title: "Homelab", tint: palette.color(for: glyph), isStale: entry.isStale)
+            WidgetHeader(title: "Homelab", tint: tint, isStale: entry.isStale, refreshedAt: entry.snapshot.lastRefreshedAt)
 
-            if let headline {
+            if entry.snapshot.lastRefreshedAt == nil {
+                Text("Status unknown")
+                    .font(.body.weight(.medium))
+                    .foregroundStyle(palette.textSecondary)
+            } else if let headline {
                 Text(headline.workflow.displayName)
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundStyle(palette.textPrimary)
@@ -138,10 +145,17 @@ struct StatusWidgetView: View {
         VStack(alignment: .leading, spacing: 8) {
             WidgetHeader(
                 title: headlineText,
-                tint: palette.color(for: glyph),
-                isStale: entry.isStale
+                tint: tint,
+                isStale: entry.isStale,
+                refreshedAt: entry.snapshot.lastRefreshedAt
             )
 
+            if entry.snapshot.lastRefreshedAt == nil {
+                Text("Waiting for GitHub")
+                    .font(.body)
+                    .foregroundStyle(palette.textSecondary)
+                Spacer(minLength: 0)
+            } else {
             VStack(spacing: family == .systemLarge ? 10 : 6) {
                 ForEach(entry.snapshot.runRows) { row in
                     HStack(spacing: 8) {
@@ -181,6 +195,7 @@ struct StatusWidgetView: View {
                     .font(.system(size: 10))
                     .foregroundStyle(palette.textTertiary)
             }
+            }
         }
     }
 
@@ -192,7 +207,7 @@ struct StatusWidgetView: View {
         ZStack {
             AccessoryWidgetBackground()
             VStack(spacing: 1) {
-                Image(systemName: glyph.symbolName)
+                Image(systemName: entry.snapshot.lastRefreshedAt == nil ? "questionmark.circle" : glyph.symbolName)
                     .font(.system(size: 14, weight: .medium))
                 Text(shortStatus)
                     .font(.system(size: 9, weight: .semibold))
@@ -208,7 +223,9 @@ struct StatusWidgetView: View {
                 Text("Homelab")
                     .font(.system(size: 12, weight: .semibold))
             }
-            if let headline {
+            if entry.snapshot.lastRefreshedAt == nil {
+                Text("Status unknown").font(.body).foregroundStyle(palette.textSecondary)
+            } else if let headline {
                 Text(headline.workflow.displayName)
                     .font(.system(size: 12))
                 Text(headline.subtitle(now: entry.date))
@@ -220,14 +237,15 @@ struct StatusWidgetView: View {
     }
 
     private var inlineText: String {
-        guard let headline else { return "Homelab · no data" }
+        guard entry.snapshot.lastRefreshedAt != nil, let headline else { return "Homelab · status unknown" }
         return "\(headline.workflow.displayName) · \(RunStatusPresentation(headline.status).label)"
     }
 
     // MARK: Wording
 
     private var headlineText: String {
-        switch glyph {
+        guard entry.snapshot.lastRefreshedAt != nil else { return "Status unknown" }
+        return switch glyph {
         case .ok: "All green"
         case .running: "Running"
         case .failed: "Needs attention"
@@ -235,7 +253,8 @@ struct StatusWidgetView: View {
     }
 
     private var shortStatus: String {
-        switch glyph {
+        guard entry.snapshot.lastRefreshedAt != nil else { return "WAIT" }
+        return switch glyph {
         case .ok: "OK"
         case .running: "RUN"
         case .failed: "FAIL"

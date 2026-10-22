@@ -17,6 +17,8 @@ extension AppState {
     /// pick up. `AlwaysAuthorised` makes that a no-op everywhere else.
     public func trigger(_ workflow: DispatchableWorkflow) async {
         guard canTrigger(workflow) else { return }
+        markBusy(workflow: workflow, true)
+        defer { markBusy(workflow: workflow, false) }
         guard await authorise("Run \(workflow.displayName) Homelab") else { return }
         await perform(.dispatch, on: workflow)
     }
@@ -24,6 +26,8 @@ extension AppState {
     public func cancel(_ workflow: DispatchableWorkflow) async {
         guard canCancel(workflow), let identifier = snapshot.row(for: workflow)?.run?.identifier
         else { return }
+        markBusy(workflow: workflow, true)
+        defer { markBusy(workflow: workflow, false) }
         guard await authorise("Cancel \(workflow.displayName) Homelab") else { return }
         await perform(.cancel(runIdentifier: identifier), on: workflow)
     }
@@ -32,17 +36,18 @@ extension AppState {
     /// Update Homelab run, which is one line in the deploy log.
     public func merge(_ pullRequest: PullRequestSummary) async {
         guard pullRequest.canMerge, !busyPullRequests.contains(pullRequest.number) else { return }
-        guard await authorise("Squash merge #\(pullRequest.number) — this deploys") else { return }
-
         markBusy(pullRequest: pullRequest.number, true)
         defer { markBusy(pullRequest: pullRequest.number, false) }
+        guard await authorise("Squash merge #\(pullRequest.number) — this deploys") else { return }
 
         do {
             try await client.squashMerge(pullRequestNumber: pullRequest.number)
         } catch {
+            actionFailure = error
             record(error)
             return
         }
+        actionFailure = nil
         // The merge pushes to main, which starts Update Homelab — refresh so the
         // run appears, and re-pace the loop now that something is active. The
         // history goes with it, so the new run shows up in its own chart rather
@@ -70,10 +75,12 @@ extension AppState {
                 try await client.cancelRun(identifier: runIdentifier)
             }
         } catch {
+            actionFailure = error
             record(error)
             return
         }
 
+        actionFailure = nil
         invalidateHistory()
         await refresh()
         restartPolling()

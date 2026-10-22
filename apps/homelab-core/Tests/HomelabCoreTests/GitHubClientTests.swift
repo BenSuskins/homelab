@@ -137,6 +137,18 @@ struct GitHubClientTests {
         #expect(try await client(transport).openPullRequests().isEmpty)
     }
 
+    @Test("reads the selected pull request description without fetching files")
+    func readsPullRequestDescription() async throws {
+        let transport = FakeTransport()
+        transport.stub(containing: "/pulls/141", json: ###"{"body":"## Changes\n\n- Preserve all health readings","base":{"ref":"main"}}"###)
+
+        let description = try await client(transport).pullRequestDescription(number: 141)
+
+        #expect(description.body == "## Changes\n\n- Preserve all health readings")
+        #expect(description.baseBranch == "main")
+        #expect(transport.descriptions == ["GET repos/BenSuskins/homelab/pulls/141"])
+    }
+
     @Test("dispatches against the default branch")
     func dispatchesWorkflow() async throws {
         let transport = FakeTransport()
