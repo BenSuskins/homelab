@@ -1,9 +1,14 @@
 import HomelabCore
 import SwiftUI
 
+private enum AppTab: String {
+    case home, pulls, health, logs
+}
+
 struct RootView: View {
     @Environment(Session.self) private var session
     @Environment(\.colorScheme) private var colorScheme
+    @State private var selectedTab: AppTab = .home
 
     var body: some View {
         content
@@ -11,10 +16,17 @@ struct RootView: View {
             // `\.palette` and none of them knows which appearance it is in.
             .homelabPalette(colorScheme)
             .tint(Palette.forScheme(colorScheme).accent)
-            // The layouts are dense grids of fixed sizes. Honouring Dynamic
-            // Type past this point turns a two-line row into four and the
-            // screen stops being scannable, which is the whole point of it.
-            .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+            .onOpenURL { url in
+                guard url.scheme == "homelab" else { return }
+                switch url.host {
+                case "home": selectedTab = .home
+                case "pull-requests": selectedTab = .pulls
+                case "health": selectedTab = .health
+                case "logs": selectedTab = .logs
+                default: break
+                }
+            }
+
     }
 
     @ViewBuilder
@@ -28,7 +40,7 @@ struct RootView: View {
             DeviceCodeView(grant: grant)
         case .signedIn:
             if let state = session.appState {
-                SignedInView(state: state)
+                SignedInView(state: state, selection: $selectedTab)
             } else {
                 LoadingScreen()
             }
@@ -49,29 +61,27 @@ private struct LoadingScreen: View {
 
 private struct SignedInView: View {
     let state: AppState
+    @Binding var selection: AppTab
 
     @Environment(Session.self) private var session
     @Environment(\.scenePhase) private var scenePhase
-    @Environment(\.palette) private var palette
 
     var body: some View {
-        TabView {
-            Tab("Home", systemImage: "square.grid.2x2") {
+        TabView(selection: $selection) {
+            Tab("Home", systemImage: "square.grid.2x2", value: .home) {
                 NavigationStack { HomeView() }
             }
-            Tab("Pull requests", systemImage: "arrow.trianglehead.pull") {
+            Tab("Pull requests", systemImage: "arrow.trianglehead.pull", value: .pulls) {
                 NavigationStack { PullRequestsView() }
             }
-            Tab("Health", systemImage: "waveform.path.ecg") {
+            Tab("Health", systemImage: "waveform.path.ecg", value: .health) {
                 NavigationStack { HealthView() }
             }
-            Tab("Logs", systemImage: "doc.text.magnifyingglass") {
+            Tab("Logs", systemImage: "doc.text.magnifyingglass", value: .logs) {
                 NavigationStack { LogsView() }
             }
         }
         .environment(state)
-        .toolbarBackground(palette.canvas, for: .tabBar)
-        .toolbarBackground(.visible, for: .tabBar)
         .task(id: scenePhase) {
             guard scenePhase == .active else { return }
             state.start()

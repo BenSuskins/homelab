@@ -16,6 +16,7 @@ public final class AppState {
     /// that "the grant was revoked" is a case match rather than a string
     /// comparison against text someone might reword.
     public internal(set) var lastFailure: GitHubFailure?
+    public internal(set) var actionFailure: GitHubFailure?
     /// Workflows and pull requests with an in-flight write, so their button can
     /// show a spinner and refuse a second click before the next poll lands.
     public internal(set) var busyWorkflows: Set<DispatchableWorkflow> = []
@@ -63,7 +64,7 @@ public final class AppState {
     }
 
     public func canTrigger(_ workflow: DispatchableWorkflow) -> Bool {
-        guard !busyWorkflows.contains(workflow) else { return false }
+        guard !busyWorkflows.contains(workflow), snapshot.lastRefreshedAt != nil else { return false }
         return snapshot.row(for: workflow)?.canTrigger ?? false
     }
 
@@ -93,6 +94,13 @@ public final class AppState {
     /// over, a test seeding history) without going through a refresh.
     public func adopt(_ snapshot: StatusSnapshot) {
         self.snapshot = snapshot
+    }
+
+    public func clearActionFailure() {
+        if snapshot.errorMessage == actionFailure?.displayMessage {
+            snapshot.errorMessage = nil
+        }
+        actionFailure = nil
     }
 
     func markBusy(workflow: DispatchableWorkflow, _ busy: Bool) {

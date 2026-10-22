@@ -22,30 +22,25 @@ struct HealthView: View {
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: Metrics.sectionSpacing) {
-                if monitor.isOffTailnet && monitor.snapshot.isEmpty {
-                    EmptyState(
-                        title: "Not connected to the tailnet",
-                        message: "Prometheus is reachable over Tailscale only. "
-                            + "Runs and pull requests still work.",
-                        symbol: "network.slash"
-                    )
-                } else {
-                    windowPicker
-                    statusStrip
-
-                    if monitor.isOffTailnet {
-                        OffTailnetNotice(detail: "Showing the last reading — not on the tailnet")
+                windowPicker
+                if let failure = monitor.failure {
+                    RequestFailure(message: failure.displayMessage) { await monitor.refresh() }
+                    if !monitor.snapshot.isEmpty {
+                        OffTailnetNotice(detail: "Showing the last successful reading")
                     }
-
+                }
+                if monitor.snapshot.isEmpty {
+                    if monitor.isRefreshing { ProgressView("Loading health…") }
+                    else if monitor.failure == nil {
+                        EmptyState(title: "No health data", message: "Prometheus reports no hosts or services.")
+                    }
+                } else {
+                    statusStrip
                     if !monitor.history.servicesDown.isEmpty {
                         section("Availability") { availability }
                     }
-
                     section("Hosts") { hosts }
-
-                    if !monitor.snapshot.services.isEmpty {
-                        section("Services") { services }
-                    }
+                    if !monitor.snapshot.services.isEmpty { section("Services") { services } }
                 }
             }
             .padding(.horizontal, Metrics.gutter)
@@ -69,26 +64,29 @@ struct HealthView: View {
     // MARK: Status
 
     private var windowPicker: some View {
-        HStack {
-            // The monitor fetches on selection rather than from a change
-            // observer, so a fast double-tap cannot leave two fetches racing to
-            // write the same history.
-            SegmentedControl(
+        ViewThatFits(in: .horizontal) {
+            HStack { rangePicker; readAge }
+            VStack(alignment: .leading) { rangePicker; readAge }
+        }
+    }
+
+    private var rangePicker: some View {
+        SegmentedControl(
                 values: MetricWindow.allCases,
                 title: { $0.label },
                 selection: monitor.window,
                 onSelect: { window in Task { await monitor.select(window) } }
-            )
+        )
+    }
 
-            Spacer(minLength: 8)
-
-            if monitor.isRefreshing {
+    @ViewBuilder
+    private var readAge: some View {
+        if monitor.isRefreshing {
                 ProgressView().controlSize(.mini).tint(palette.textTertiary)
             } else if let refreshed = monitor.snapshot.lastRefreshedAt {
                 Text(RelativeTime.ago(refreshed))
                     .font(Typeface.footnote)
                     .foregroundStyle(palette.textTertiary)
-            }
         }
     }
 
@@ -97,7 +95,7 @@ struct HealthView: View {
             StatTile(
                 label: "Up",
                 value: "\(monitor.snapshot.upCount)/\(monitor.snapshot.services.count)",
-                tint: monitor.snapshot.downCount == 0 ? palette.positive : palette.negative,
+                tint: monitor.snapshot.services.isEmpty ? nil : (monitor.snapshot.downCount == 0 ? palette.positive : palette.negative),
                 detail: monitor.snapshot.availability.map {
                     "\(Int(($0 * 100).rounded()))% available"
                 } ?? "no endpoints"
@@ -106,9 +104,7 @@ struct HealthView: View {
                 label: "Hosts",
                 value: "\(monitor.snapshot.hosts.count)",
                 tint: monitor.snapshot.strainedHosts.isEmpty ? nil : palette.warning,
-                detail: monitor.snapshot.strainedHosts.isEmpty
-                    ? "all nominal"
-                    : "\(monitor.snapshot.strainedHosts.count) strained"
+                detail: "\(monitor.snapshot.hosts.filter(\.isReporting).count) reporting · \(monitor.snapshot.strainedHosts.count) strained"
             )
             peakTile
         }
@@ -160,9 +156,7 @@ struct HealthView: View {
                     history: monitor.history,
                     isExpanded: expandedHost == host.host,
                     onToggle: {
-                        withAnimation(.easeInOut(duration: 0.18)) {
-                            expandedHost = expandedHost == host.host ? nil : host.host
-                        }
+                        expandedHost = expandedHost == host.host ? nil : host.host
                     }
                 )
             }
@@ -202,38 +196,42 @@ private struct HostCard: View {
 
     var body: some View {
         Card {
-            VStack(alignment: .leading, spacing: 12) {
-                header
-
-                if isExpanded {
+            DisclosureGroup(isExpanded: Binding(get: { isExpanded }, set: { _ in onToggle() })) {
+                VStack(alignment: .leading, spacing: 20) {
                     ForEach(MetricKind.allCases) { kind in
-                        if let series = history.series(kind, host: host.host), series.points.count > 1 {
-                            VStack(alignment: .leading, spacing: 4) {
-                                HStack {
-                                    Text(kind.title)
-                                        .font(Typeface.footnote)
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack(alignment: .firstTextBaseline) {
+                                Text(kind.title).font(Typeface.caption)
+                                Spacer()
+                                if let series = history.series(kind, host: host.host), let peak = series.peak {
+                                    Text("Peak \(kind.format(peak))").font(Typeface.footnote)
                                         .foregroundStyle(palette.textSecondary)
-                                    Spacer()
-                                    if let peak = series.peak {
-                                        Text("peak \(kind.format(peak))")
-                                            .font(Typeface.footnote)
-                                            .foregroundStyle(palette.textTertiary)
-                                    }
                                 }
+                            }
+                            if let series = history.series(kind, host: host.host), series.points.count > 1 {
                                 MetricChart(series: series, kind: kind)
+                                    .accessibilityLabel("\(host.host), \(kind.title)")
+                            } else {
+                                Text("No history for this range").font(Typeface.caption)
+                                    .foregroundStyle(palette.textSecondary)
                             }
                         }
                     }
-                } else if let series = leadingSeries {
-                    Sparkline(
-                        points: series.points,
-                        tint: palette.color(for: host.severity)
-                    )
+                }.padding(.top, 16)
+            } label: {
+                VStack(alignment: .leading, spacing: 10) {
+                    header
+                    if !isExpanded, let leading = leadingMetric,
+                       let series = history.series(leading, host: host.host) {
+                        Text("\(leading.title) history").font(Typeface.footnote)
+                            .foregroundStyle(palette.textSecondary)
+                        Sparkline(points: series.points, tint: palette.color(for: host.severity))
+                            .accessibilityLabel("\(host.host), \(leading.title) history")
+                    }
                 }
+                .frame(minHeight: 44)
             }
         }
-        .contentShape(.rect)
-        .onTapGesture(perform: onToggle)
     }
 
     private var header: some View {
@@ -251,14 +249,12 @@ private struct HostCard: View {
                     Pill(text: "no data", tint: palette.textTertiary)
                 }
 
-                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(palette.textTertiary)
+
             }
 
             // Four readings on their own row: on a 375pt phone they do not fit
             // beside the host name without one of them truncating to nothing.
-            HStack(spacing: 0) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 100), alignment: .leading)], alignment: .leading, spacing: 12) {
                 ForEach(MetricKind.allCases) { kind in
                     Reading(
                         label: kind.title,
@@ -271,18 +267,10 @@ private struct HostCard: View {
         }
     }
 
-    /// The line worth showing when collapsed: whichever metric is closest to a
-    /// threshold, rather than always CPU.
-    private var leadingSeries: MetricSeries? {
-        MetricKind.allCases
-            .filter(\.isFraction)
-            .compactMap { kind -> (series: MetricSeries, value: Double)? in
-                guard let series = history.series(kind, host: host.host),
-                      let latest = series.latest else { return nil }
-                return (series: series, value: latest)
-            }
-            .max { $0.value < $1.value }?
-            .series
+    private var leadingMetric: MetricKind? {
+        MetricKind.allCases.filter(\.isFraction)
+            .filter { history.series($0, host: host.host)?.latest != nil }
+            .max { (history.series($0, host: host.host)?.latest ?? 0) < (history.series($1, host: host.host)?.latest ?? 0) }
     }
 }
 
@@ -294,7 +282,7 @@ private struct ServiceGroupCard: View {
 
     @Environment(\.palette) private var palette
 
-    private let columns = [GridItem(.adaptive(minimum: 132), spacing: 6)]
+    private let columns = [GridItem(.adaptive(minimum: 240), spacing: 6)]
 
     var body: some View {
         Card {
@@ -320,9 +308,12 @@ private struct ServiceGroupCard: View {
                                 .foregroundStyle(
                                     service.isUp ? palette.textSecondary : palette.textPrimary
                                 )
-                                .lineLimit(1)
                             Spacer(minLength: 0)
+                            Text(service.isUp ? "Up" : "Down")
+                                .font(Typeface.footnote)
+                                .foregroundStyle(palette.color(isUp: service.isUp))
                         }
+                        .accessibilityElement(children: .combine)
                     }
                 }
             }

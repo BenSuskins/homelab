@@ -27,6 +27,17 @@ struct HomelabMenuBarApp: App {
         }
         .menuBarExtraStyle(.window)
 
+        WindowGroup("Pull request", for: PullRequestSummary.self) { $pullRequest in
+            if let pullRequest, let state = session.appState {
+                PullRequestDescriptionView(pullRequest: pullRequest)
+                    .environment(state)
+                    .frame(minWidth: 420, minHeight: 400)
+            } else {
+                ContentUnavailableView("Sign in to read pull requests", systemImage: "person.crop.circle")
+            }
+        }
+        .defaultSize(width: 640, height: 720)
+
         Settings {
             SettingsView()
                 .environment(session)

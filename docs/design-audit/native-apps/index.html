@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Homelab · Native app design review</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#242a33;background:#fafbfc;font-size:14px;font-synthesis:none;--accent:#225ed0;--muted:#626b78;--line:#e2e6eb}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0}
+button,input,select{font:inherit}
+button,select{cursor:pointer}
+button,a,input,select,summary{touch-action:manipulation}
+button{color:inherit}
+button:active{filter:brightness(.9)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+a{color:var(--accent);text-underline-offset:3px}
+.skip{position:fixed;top:-100px;left:15px;z-index:10;background:white;padding:15px}
+.skip:focus{top:10px}
+.top{min-height:77px;display:flex;gap:20px;align-items:center;justify-content:space-between;padding:18px 28px;border-bottom:1px solid var(--line);background:white}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mark{background:#edf2fc;color:#225ed0;border-radius:8px;padding:9px;display:flex}
+.brand strong{display:block;font-size:17px;letter-spacing:-.3px}
+.brand small{color:var(--muted);line-height:1.8}
+.top-meta{display:flex;align-items:center;gap:16px;font-size:12px;color:var(--muted)}
+.draft{border:1px solid #cbd5e6;border-radius:4px;padding:5px 10px;color:#52617a}
+.workspace{display:grid;grid-template-columns:210px minmax(0,1fr) 265px;min-height:calc(100vh - 77px)}
+.sidebar{padding:26px 12px;border-right:1px solid var(--line);background:#f5f5f7}
+.sidebar h2{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:0 12px 12px}
+.sidebar nav+nav{margin-top:26px}
+.nav-button{border:0;background:none;padding:10px 12px;min-height:40px;width:100%;text-align:left;border-radius:7px;display:flex;gap:10px;align-items:center;margin:2px 0}
+.nav-button[aria-current=page]{background:#e9effb;color:#225ed0;font-weight:600}
+.nav-button:hover{background:#e9e9ee}
+.nav-button span{margin-left:auto;font-size:11px;color:var(--muted)}
+.sidebar-footer{border-top:1px solid var(--line);margin:28px 10px 0;padding-top:18px;font-size:12px;line-height:1.7;color:var(--muted)}
+main{min-width:0}
+.intro{padding:27px 30px 20px}
+.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:1.3px;color:var(--muted);margin:0 0 8px}
+.intro h1{font-size:28px;letter-spacing:-.8px;margin:0 0 8px;font-weight:650}
+.intro p{line-height:1.6;color:var(--muted);margin:0;max-width:60ch}
+.controls{padding:14px 30px;display:flex;align-items:end;gap:14px;flex-wrap:wrap;border-block:1px solid var(--line);background:white}
+.control{display:flex;flex-direction:column;gap:6px;font-size:11px;color:var(--muted)}
+select{color:#33353d;min-height:36px;border:1px solid #d8dae0;background:#fafafa;border-radius:7px;padding:6px 28px 6px 9px;max-width:100%}
+.stage{padding:28px 22px 36px;background:#f1f3f6;display:flex;flex-direction:column;align-items:center;gap:18px;min-height:850px}
+.stage-label{font-size:11px;color:var(--muted);text-align:center;line-height:1.5}
+.preview{--canvas:#ffffff;--surface:#ffffff;--raised:#f2f4f7;--text:#19202a;--secondary:#566170;--tertiary:#626d7b;--border:#e0e5eb;--accent:#225ed0;--accent-bg:#edf2fc;--positive:#24734e;--negative:#b52c36;--warning:#86590c;--progress:#2567ad;--glass:rgba(248,250,253,.72);--glass-edge:rgba(255,255,255,.78);--glass-highlight:rgba(255,255,255,.95);--glass-selection:rgba(194,215,251,.48);--scale:1;position:relative;background:var(--canvas);color:var(--text);font-size:calc(17px * var(--scale));line-height:1.4;width:min(100%,var(--device-width,375px));border:1px solid #cbd2dc;box-shadow:0 8px 24px #182b4010;border-radius:28px;overflow:hidden;min-width:0}
+.preview.dark{--canvas:#101318;--surface:#101318;--raised:#1b2028;--text:#edf0f4;--secondary:#b6bfcc;--tertiary:#a4afbe;--border:#303945;--accent:#8ab7ff;--accent-bg:#1a2b45;--positive:#7bd4a8;--negative:#ff929b;--warning:#edc477;--progress:#8ab7ff;--glass:rgba(37,44,55,.76);--glass-edge:rgba(196,213,239,.18);--glass-highlight:rgba(235,244,255,.14);--glass-selection:rgba(110,151,217,.22);color-scheme:dark}
+.preview a{color:var(--accent)}
+.preview svg{width:20px;height:20px;flex-shrink:0}
+.preview button{background:none;border:0;font-size:inherit;min-height:44px;color:var(--accent);border-radius:8px;padding:9px 10px}
+.preview button:hover{background:var(--raised)}
+.preview button:disabled{opacity:.55;cursor:default}
+.statusbar{height:38px;display:flex;align-items:center;justify-content:space-between;padding:8px 24px;font-size:12px;font-weight:650}
+.statusbar .island{background:var(--text);border-radius:20px;width:80px;height:17px}
+.apphead{padding:8px 16px 12px}
+.apphead .title-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.apphead h2{font-size:1.75em;letter-spacing:-.045em;line-height:1.15;margin:0}
+.preview .avatar{width:44px;height:44px;border-radius:50%;background:var(--raised);font-size:.76em;font-weight:600}
+.context{font-size:.75em;color:var(--secondary);margin:5px 0 0}
+.scroll{height:610px;overflow:auto;scrollbar-width:thin;padding:4px 16px 20px;overscroll-behavior:contain}
+.scroll>h3,.sheet h3{font-size:.82em;letter-spacing:0;margin:24px 0 10px}
+.card{padding:14px 0;background:transparent;border:0;border-bottom:1px solid var(--border);border-radius:0;margin:0;min-width:0;overflow-wrap:anywhere}
+.card h3{font-size:1em;margin:0 0 5px;line-height:1.35}
+.card p{margin:5px 0 0}
+.small{font-size:.78em;color:var(--secondary)}
+.muted{color:var(--tertiary)}
+.row{display:flex;align-items:center;gap:9px;min-width:0}
+.row>div{min-width:0;flex:1}
+.spread{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:.74em;font-weight:500;padding:0;background:none;border:0;border-radius:0;width:fit-content;line-height:1.4}
+.good{color:var(--positive)}
+.bad{color:var(--negative)}
+.warn{color:var(--warning)}
+.progress{color:var(--progress)}
+.hero{padding:8px 0 16px;margin:0 0 8px}
+.hero .hero-symbol{display:flex;align-items:center;justify-content:center;align-self:start;background:none;width:24px;height:28px;flex-shrink:0}
+.hero h3{font-size:1.08em;letter-spacing:-.02em}
+.hero .small{margin-top:7px}
+.preview .primary{color:white;background:#225ed0;font-weight:600}
+.preview .primary:hover{background:#1b4ea9}
+.preview .secondary{background:none;border:0;color:var(--accent)}
+.preview .danger{color:var(--negative);border:0}
+.full{display:block;width:100%;margin-top:12px}
+.actionbar{margin-top:5px;padding-top:0;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center}
+.actionbar a{font-size:.8em;min-height:44px;display:flex;align-items:center;gap:6px}
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,90px),1fr));gap:0;margin:12px 0;padding:12px 0;border-bottom:1px solid var(--border)}
+.summary-grid div{background:none;padding:0 12px 0 0;border-radius:0}
+.summary-grid strong{font-size:1.3em;font-weight:600;display:block;font-variant-numeric:tabular-nums}
+.summary-grid span{font-size:.72em;color:var(--secondary)}
+.tabs{position:absolute;z-index:3;left:12px;right:12px;bottom:22px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;border:1px solid var(--glass-edge);padding:5px;background:var(--glass);border-radius:40px;box-shadow:0 6px 24px #13283d1c,inset 0 1px 1px var(--glass-highlight);backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8)}
+.preview .tabs button{color:var(--secondary);display:flex;flex-direction:column;gap:3px;align-items:center;justify-content:center;font-size:.62em;min-width:0;min-height:54px;line-height:1.2;padding:7px 2px;border-radius:30px;border:1px solid transparent}
+.preview .tabs button[aria-current=page]{color:var(--accent);background:var(--glass-selection);border-color:var(--glass-edge);box-shadow:inset 0 1px 1px var(--glass-highlight)}
+.tabs svg{width:22px;height:22px}
+.notice{padding:10px 12px;border:0;border-left:2px solid var(--warning);border-radius:0;background:var(--raised);margin:0 0 12px;font-size:.8em}
+.notice p{margin:5px 0}
+.preview .notice button{padding:3px 0}
+.section-title{display:flex;justify-content:space-between;align-items:center;margin-top:20px}
+.section-title h3{font-size:.85em;margin:0 0 10px}
+.bars{height:30px;display:flex;align-items:end;gap:4px;margin:12px 0 5px}
+.bars i{display:block;flex:1;background:var(--positive);border-radius:2px 2px 0 0;opacity:.75}
+.bars i:last-child{background:var(--negative);opacity:1}
+.legend{font-size:.72em;color:var(--secondary);margin:6px 0 0}
+.preview details>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--accent)}
+details>summary::after{content:'⌄';font-size:20px}
+details[open]>summary::after{content:'⌃'}
+details .card{margin-top:12px}
+.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,100px),1fr));gap:12px;margin-top:16px}
+.metric-grid strong{display:block;font-variant-numeric:tabular-nums}
+.metric-grid span{font-size:.72em;color:var(--secondary)}
+.preview .chart{width:100%;height:90px;margin-top:8px;display:block!important}
+.chart text{fill:var(--secondary);font-size:11px}
+.chart line{stroke:var(--border)}
+.chart path{stroke:var(--warning);stroke-width:2.5;fill:none}
+.segmented{display:flex;gap:4px;background:transparent;padding:0;border:0;border-bottom:1px solid var(--border);border-radius:0;flex-wrap:wrap;margin:0 0 12px}
+.preview .segmented button{font-size:.8em;flex:1;padding:8px 6px;min-width:44px;color:var(--secondary);border-radius:0;border-bottom:2px solid transparent}
+.preview .segmented button[aria-pressed=true]{background:none;color:var(--accent);border-bottom-color:var(--accent);box-shadow:none}
+.filters{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.filters label{font-size:.75em;color:var(--secondary);min-width:0}
+.preview select,.preview input{width:100%;margin-top:5px;padding:9px;min-height:44px;border:1px solid var(--border);border-radius:8px;color:var(--text);background:var(--surface);font-size:1em}
+.search-label{font-size:.75em;color:var(--secondary);display:block;margin-bottom:10px}
+.preview .chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.preview .chips button{font-size:.75em;min-width:44px;color:var(--secondary);border:0;border-bottom:2px solid transparent;border-radius:0}
+.preview .chips button[aria-pressed=true]{color:var(--accent);background:none;border-bottom-color:var(--accent)}
+.preview .log-entry{color:var(--text);text-align:left;padding:14px 0;width:100%;border-bottom:1px solid var(--border);border-radius:0}
+.log-entry>span{display:block}
+.log-meta{display:flex!important;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:.72em;color:var(--secondary);margin-bottom:6px}
+.log-message{font-size:.9em;overflow-wrap:anywhere}
+.code{font-family:ui-monospace,SFMono-Regular,monospace;font-size:.8em;white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0;line-height:1.6}
+.pairs{display:grid;grid-template-columns:minmax(0,.75fr) minmax(0,1.3fr);gap:10px;font-size:.8em}
+.pairs dt{color:var(--secondary)}
+.pairs dd{margin:0;overflow-wrap:anywhere}
+.sheet-nav{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding:5px 8px;margin-bottom:14px;gap:8px}
+.sheet-nav strong{font-size:.9em}
+.center-state{padding:55px 8px;text-align:center}
+.center-state svg{width:38px;height:38px;margin-bottom:12px;color:var(--tertiary)}
+.center-state h3{font-size:1.1em}
+.center-state p{font-size:.85em;color:var(--secondary)}
+.code-panel{font-family:ui-monospace,monospace;font-size:1.65em;letter-spacing:2px;text-align:center;padding:20px 8px;background:var(--raised);border-radius:10px;overflow-wrap:anywhere}
+.steps{font-size:.88em;padding-left:24px;line-height:1.7}
+.preview.mac{border-radius:13px;--device-width:350px;font-size:calc(13px * var(--scale))}
+.preview.mac .scroll{height:auto;max-height:500px;padding:8px 12px 12px}
+.preview.mac button{min-height:30px;padding:5px 8px}
+.preview.mac .apphead{border-bottom:1px solid var(--border);padding:15px}
+.preview.mac .apphead h2{font-size:1.15em;letter-spacing:0}
+.menu-footer{border-top:1px solid var(--border);padding:8px 10px;display:flex;justify-content:space-between;gap:4px;flex-wrap:wrap}
+.menu-footer button{font-size:.9em}
+.mac .row a{display:flex;align-items:center;gap:6px;color:var(--text);font-weight:600;text-decoration:none}
+.mac .row a svg{width:13px;height:13px}
+.mac .card{padding:10px 0;margin:0}
+.mac .actionbar a{min-height:30px}
+.preview.settings{--device-width:460px}
+.windowbar{padding:11px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;font-size:.9em}
+.lights{display:flex;gap:6px}
+.lights i{display:block;width:10px;height:10px;border-radius:50%;background:#a0a5af}
+.windowbar strong{flex:1;text-align:center}
+.preview.widget{border-radius:22px;--device-width:350px;padding:18px;font-size:calc(15px * var(--scale))}
+.widget.circular{--device-width:150px;border-radius:50%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;padding:15px}
+.widget.inline{--device-width:490px;border-radius:12px}
+.widget.small-widget{--device-width:190px}
+.widget .stat{font-size:2.1em;font-weight:650;letter-spacing:-.05em;margin:10px 0 3px}
+.widget h3{font-size:1em;margin:0}
+.widget p{margin:8px 0}
+.widget .card{padding:10px}
+.notes{padding:28px 22px;border-left:1px solid var(--line);background:#fff}
+.notes h2{font-size:15px;margin:0 0 14px}
+.notes h3{font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin:24px 0 8px}
+.notes p,.notes li{font-size:13px;line-height:1.65;color:#555966}
+.notes ul{padding-left:18px}
+.priority{font-size:11px;display:inline-block;border-radius:5px;padding:4px 7px;background:#f6ece2;color:#84501a}
+.note-rule{margin-top:25px;border-top:1px solid var(--line);padding-top:15px}
+.preview.large-text .summary-grid,.preview.large-text .filters,.preview.large-text .metric-grid,.preview.large-text .pairs{grid-template-columns:1fr}
+.preview.large-text .pairs dd{margin-bottom:10px}
+.preview.large-text .row{flex-wrap:wrap}
+.preview.large-text .tabs{grid-template-columns:1fr 1fr}
+.preview.large-text .statusbar{font-size:12px}
+.preview.large-text .sheet-nav{flex-wrap:wrap}
+.preview.large-text .sheet-nav strong{order:-1;flex-basis:100%;text-align:center}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);max-width:90vw;background:#272a35;color:white;padding:12px 18px;border-radius:12px;box-shadow:0 8px 25px #0002;z-index:5;font-size:14px}
+.toast:empty{display:none}
+.preview[hidden]{display:none}
+.screen-picker{display:none}
+.widget-foot{margin-top:16px;font-size:.75em;color:var(--secondary)}
+@media(prefers-reduced-motion:no-preference){button{transition:background-color .12s,color .12s,filter .12s}
+}
+@media(prefers-contrast:more){.preview{--secondary:var(--text);--tertiary:var(--text);--border:var(--text)}
+}
+@media(prefers-reduced-transparency:reduce){.preview{backdrop-filter:none}
+}
+@media(max-width:1200px){.workspace{grid-template-columns:190px minmax(0,1fr)}
+.notes{grid-column:2;border-left:0;border-top:1px solid var(--line)}
+.stage{min-height:780px}
+}
+@media(max-width:680px){.workspace{display:block}
+.sidebar{display:none}
+.screen-picker{display:flex}
+.top{padding:14px 16px}
+.top-meta{display:none}
+.intro{padding:22px 16px}
+.controls{padding:12px 16px;gap:10px}
+.stage{padding:20px 10px;min-height:0}
+.notes{padding:24px 20px}
+.preview{border-radius:18px}
+.intro h1{font-size:25px}
+.control{max-width:100%}
+}
+@media print{.sidebar,.controls,.top-meta{display:none}
+.workspace{display:block}
+.stage{background:white}
+.scroll{height:auto}
+.notes{border:0}
+.top{border:0}
+.preview{break-inside:avoid;box-shadow:none}
+}
+
+body.capture .top,body.capture .sidebar,body.capture .intro,body.capture .controls,body.capture .notes{display:none}
+body.capture .workspace{display:block;min-height:0}
+body.capture .stage{min-height:100vh;padding:16px}
+body.capture .preview:not(.mac) .scroll{height:500px}
+body.capture .preview.mac .scroll{max-height:470px}
+body.capture .stage-label{font-size:11px}
+
+.preview .pull-open{display:block;width:100%;padding:0;text-align:left;color:var(--text);white-space:normal;overflow-wrap:anywhere}
+.pull-title{display:block;font-size:1em;margin:12px 0 5px;line-height:1.4}
+.pull-open .small{display:block}
+.read-description{display:block;font-size:.8em;margin-top:10px;color:var(--accent)}
+.preview.mac .pull-open{padding:0}
+.mac .pull-title{margin-top:8px}
+.mac .read-description{margin-top:6px}
+.description{line-height:1.6;overflow-wrap:anywhere}
+.description p{margin:0 0 14px}
+.description p:last-child{margin-bottom:0}
+.description h4{font-size:1em;margin:22px 0 8px}
+.description ul{padding-left:22px;margin:8px 0 16px}
+.description li+li{margin-top:6px}
+.description code{font-family:ui-monospace,SFMono-Regular,monospace;font-size:.85em;background:var(--raised);padding:2px 4px;border-radius:4px}
+.description blockquote{margin:18px 0 0;padding:10px 12px;border-left:3px solid var(--border);background:var(--raised);font-size:.8em;color:var(--secondary)}
+.description-table{overflow-x:auto;max-width:100%}
+.description table{width:100%;border-collapse:collapse;font-size:.78em;margin-top:8px}
+.description caption{text-align:left;color:var(--secondary);padding-bottom:10px}
+.description th,.description td{text-align:left;vertical-align:top;padding:9px 6px;border-bottom:1px solid var(--border);overflow-wrap:anywhere}
+.preview.mac.pr-reader{--device-width:520px}
+.preview.mac.pr-reader .scroll{max-height:560px}
+.pull-nav strong{font-size:.8em}
+.pull-nav button{font-size:.85em}
+
+
+.health-dashboard{padding-top:0}
+
+.health-toolbar .segmented{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin:0}
+
+.health-toolbar .segmented button{min-width:0;font-size:.8em}
+
+.health-age{font-size:.72em;color:var(--secondary);margin:10px 0 0}
+
+.health-overview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:18px 0 14px;border-bottom:1px solid var(--border)}
+
+.health-overview>div{min-width:0}
+
+.health-overview strong{display:block;font-size:1.35em;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.2;margin-bottom:6px}
+
+.metric-denominator{font-size:.7em;color:var(--secondary);font-weight:400}
+
+.metric-label{display:block;font-size:.72em;color:var(--secondary);font-weight:400;margin-bottom:2px}
+
+.metric-detail{display:block;font-size:.7em;color:var(--secondary);margin-top:3px;overflow-wrap:anywhere}
+
+.health-status{display:flex;align-items:center;gap:8px;font-size:.8em;min-height:44px;margin:0;padding:10px 0;border-bottom:1px solid var(--border)}
+
+.health-status svg{width:16px;height:16px}
+
+.health-section-heading{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin:0 0 10px}
+
+.health-section-heading h3{font-size:.9em;line-height:1.4;margin:0;font-weight:600}
+
+.health-section-heading h4{font-size:.8em;line-height:1.4;margin:0;font-weight:600}
+
+.health-section-heading>span{font-size:.7em;color:var(--secondary)}
+
+.health-availability{padding:18px 0 14px;border-bottom:1px solid var(--border)}
+
+.health-availability p{font-size:.68em;margin:4px 0 0}
+
+.preview .health-chart{display:block;width:100%;height:auto;max-height:110px;overflow:visible;color:var(--accent)}
+
+.preview .health-chart.bad{color:var(--negative)}
+
+.preview .health-chart.warn{color:var(--warning)}
+
+.chart-guides path{fill:none;stroke:var(--border);stroke-width:.7;vector-effect:non-scaling-stroke}
+
+.chart-area{fill:currentColor;opacity:.055}
+
+.chart-line{fill:none;stroke:currentColor;stroke-width:1.7;vector-effect:non-scaling-stroke;stroke-linecap:round;stroke-linejoin:round}
+
+.chart-current{fill:currentColor}
+
+.chart-text{font-size:10px;fill:var(--secondary)}
+
+.health-hosts{padding-top:20px}
+
+.host-data{border-bottom:1px solid var(--border);padding:0}
+
+.preview .host-data>summary{display:block;position:relative;min-height:44px;padding:12px 0;color:var(--text);list-style:none}
+
+.host-data>summary::-webkit-details-marker{display:none}
+
+.host-data>summary::after{display:none}
+
+.host-heading{display:flex;justify-content:space-between;align-items:baseline;gap:10px;line-height:1.4}
+
+.host-heading>strong{font-size:.9em;font-weight:600}
+
+.host-state{display:flex;gap:10px;align-items:center;font-size:.7em}
+
+.host-chevron{font-size:16px;color:var(--tertiary)}
+
+.host-data[open] .host-chevron{transform:rotate(180deg)}
+
+.host-readings{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}
+
+.host-readings strong{display:block;font-size:.88em;font-weight:500;font-variant-numeric:tabular-nums}
+
+.host-trend{display:flex;align-items:center;gap:12px;justify-content:space-between;margin-top:6px;color:var(--secondary);font-size:.66em}
+
+.preview .host-spark{display:block;width:105px;height:20px;color:var(--accent)}
+
+.preview .host-spark.warn{color:var(--warning)}
+
+.preview .host-spark.bad{color:var(--negative)}
+
+.host-spark path{fill:none;stroke:currentColor;stroke-width:1.4;vector-effect:non-scaling-stroke}
+
+.host-charts{padding:4px 0 14px}
+
+.health-metric-chart{margin:12px 0 0;padding:0 0 10px}
+
+.health-metric-chart figcaption{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+
+.health-metric-chart figcaption strong{font-size:.8em;font-weight:500}
+
+.health-metric-chart figcaption span{font-size:.65em}
+
+.health-services{padding-top:22px}
+
+.service-group{padding:12px 0;border-bottom:1px solid var(--border)}
+
+.service-group .health-section-heading{margin-bottom:4px}
+
+.service-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 20px}
+
+.service-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:8px 0;font-size:.74em;line-height:1.35}
+
+.service-name{overflow-wrap:anywhere}
+
+.service-state{font-size:.88em}
+
+.preview.large-text .health-overview{grid-template-columns:1fr}
+
+.preview.large-text .host-readings{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+
+.preview.large-text .host-heading{flex-wrap:wrap}
+
+.preview.large-text .service-grid{grid-template-columns:1fr}
+
+.preview.large-text .host-trend{flex-wrap:wrap}
+
+@media(prefers-contrast:more){.preview{--secondary:var(--text);--tertiary:var(--text);--border:var(--text)}
+}
+
+
+.preview.has-tabs .scroll{padding-bottom:calc(128px * var(--scale));scroll-padding-bottom:calc(128px * var(--scale))}
+.preview.has-tabs::after{content:'';position:absolute;z-index:4;bottom:7px;left:calc(50% - 48px);width:96px;height:4px;border-radius:4px;background:var(--text);opacity:.75;pointer-events:none}
+.preview .avatar,.preview .sheet-nav button{background:var(--glass);border:1px solid var(--glass-edge);box-shadow:0 3px 12px #13283d12,inset 0 1px 1px var(--glass-highlight);backdrop-filter:blur(20px) saturate(1.6);-webkit-backdrop-filter:blur(20px) saturate(1.6)}
+.preview .sheet-nav{border:0}
+.preview .sheet-nav button{border-radius:25px;padding:8px 13px}
+.preview .tabs button:hover{background:var(--glass-selection)}
+@media(prefers-reduced-transparency:reduce){.preview .tabs,.preview .avatar,.preview .sheet-nav button{background:var(--surface);backdrop-filter:none;-webkit-backdrop-filter:none;border-color:var(--border);box-shadow:none}}
+@media(prefers-contrast:more){.preview .tabs,.preview .avatar,.preview .sheet-nav button{background:var(--surface);backdrop-filter:none;-webkit-backdrop-filter:none;border-color:var(--text)}.preview .tabs button[aria-current=page]{outline:1px solid var(--accent)}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to preview</a>
+<header class="top"><div class="brand"><div class="brand-mark" id="brand-icon"></div><div><strong>Homelab</strong><small>Native app design review</small></div></div><div class="top-meta"><span>22 October 2026</span><span class="draft">Draft proposal</span><a href="AUDIT.md">Read the audit ↗</a></div></header>
+<div class="workspace"><aside class="sidebar" id="navigation" aria-label="Screen library"></aside>
+<main id="main"><section class="intro"><p class="eyebrow" id="platform-label">iOS app</p><h1 id="screen-title">Home</h1><p id="screen-description"></p></section>
+<div class="controls" aria-label="Preview controls">
+<label class="control screen-picker">Screen<select id="screen-select"></select></label>
+<label class="control">State<select id="state-select"></select></label>
+<label class="control">Appearance<select id="theme-select"><option value="light">Light</option><option value="dark">Dark</option></select></label>
+<label class="control" id="width-control">Layout<select id="width-select"><option value="375">iPhone · 375 pt</option><option value="320">iPhone · 320 pt</option><option value="667">Landscape · 667 pt</option><option value="768">iPad · 768 pt</option></select></label>
+<label class="control">Text size<select id="text-select"><option value="1">Default</option><option value="1.35">Large · 135%</option><option value="2">Accessibility · 200%</option></select></label>
+<label class="control" id="family-control" hidden>Widget family<select id="family-select"></select></label>
+</div><section class="stage" aria-label="Interactive proposal"><div id="preview" class="preview"></div><div class="stage-label">Sample data · All actions stay in this mockup.<br>HTML approximates iOS 26 Liquid Glass. Native device checks remain separate.</div></section></main>
+<aside class="notes" aria-label="Design notes"><span class="priority" id="priority"></span><h3>What changes</h3><h2 id="note-title"></h2><p id="current-note"></p><h3>Proposed behavior</h3><ul id="improvements"></ul><div class="note-rule"><h3>Evidence</h3><p id="source-note"></p><a href="AUDIT.md">Full screen audit ↗</a><p><a href="../../../DESIGN.md">Draft DESIGN.md ↗</a></p></div></aside></div>
+<div class="toast" role="status" aria-live="polite" id="toast"></div>
+<script>
+'use strict';
+const icons={home:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',pull:'<circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><path d="M6 7v10M14 4h3v12"/><circle cx="17" cy="19" r="2"/><path d="m14 1-3 3 3 3"/>',health:'<path d="M2 12h5l3-8 4 16 3-8h5"/>',logs:'<path d="M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h5"/>',server:'<rect x="3" y="3" width="18" height="7" rx="2"/><rect x="3" y="14" width="18" height="7" rx="2"/><path d="M7 6.5h1M7 17.5h1M14 6.5h3M14 17.5h3"/>',check:'<path d="m5 12 4 4L20 5"/>',warning:'<path d="M12 3 2 21h20zM12 9v5M12 17v1"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/>',external:'<path d="M14 3h7v7M21 3 10 14M10 3H3v18h18v-7"/>',network:'<path d="m3 3 18 18M7 7a8 8 0 0 1 14 5M3 12a8 8 0 0 1 1-4M7 16a6 6 0 0 1 10-4M11 19h2"/>',person:'<circle cx="12" cy="8" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3"/>',play:'<path d="m8 4 12 8-12 8z"/>',settings:'<path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="10" cy="18" r="2"/>'};
+function icon(name){return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]||icons.server}</svg>`}
+const screens=[
+['home','iOS','Home','home','Workflow status before history. Actions have a clear target.',['Attention','Passed','Running','Awaiting approval','Loading','Stale','Error','No data'],'P1','Make the status trustworthy','The current headline falls through to “All workflows green” when no run supports that claim.',['Name the workflow that needs attention.','Show unknown, stale, and failed reads.','Separate the run link from the action.'],'HomeView.swift · headline, WorkflowCard'],
+['pulls','iOS','Pull requests','pull','Read the description and merge with device authentication.',['Mixed','Empty','Loading','Stale','Error'],'P1','Explain the merge','The current empty list also serves as an empty request state. Errors appear on Home.',['Keep Ready and Waiting groups.','Tap Merge, authenticate, and submit without another screen.','Show the cause of a failed read locally.'],'PullRequestsView.swift · body, PullRequestCard'],
+['pull-detail','iOS','PR description','pull','Read the pull request body before a merge.',['Description','No description','Loading','Stale','Error','Conflicts'],'P2 proposal','Read the description inside the app','The current pull request card opens GitHub. Its query does not request the body.',['Open the selected pull request without leaving the app.','Show its body, readiness, and merge action.','Preserve the list position when the user goes back.'],'PullRequestsView.swift; GitHubClient.swift · pullRequestQuery'],
+['health','iOS','Health','health','All the Health information, with compact rows and visible history.',['Attention','Healthy','Host no data','Loading','Stale','Unavailable','Error','No data'],'P1','Preserve Health information','The first mockup omits summary metrics, most hosts and services, and two charts per host.',['Keep the service count, host count, peak, and availability chart.','Show all six hosts, four readings per host, and all 27 sample services.','Expand any host for CPU, memory, disk, and load history.'],'HealthView.swift · statusStrip, HostCard, ServiceGroupCard'],
+['logs','iOS','Logs','logs','Readable lines, clear query scope, and an explicit stream state.',['Paused','Live','Empty','Loading','Stale','Unavailable','Error'],'P1','Keep the reading position stable','The current level controls and fields use 9–10 point text. The Live label does not change when paused.',['Show Paused or Live as text.','State the 500-line limit and local search scope.','Keep all details one tap away.'],'LogsView.swift · filters, levels, tailToggle, LogRow'],
+['log-detail','iOS','Log detail','logs','Keep the full message and raw evidence available.',['Structured','Plain'],'P2','Keep detail readable','The current detail view preserves the evidence, but uses fixed small text in its tables.',['Wrap the message and field values.','Keep declared and inferred levels distinct.','Expose copy and isolate-container actions.'],'LogDetailView.swift · heading, fields, raw'],
+['account','iOS','Account','person','Show the account, the target, and the actual app behavior.',['Signed in','Viewer unavailable'],'P2','Explain the account clearly','The current account sheet says trigger, cancel, and merge all deploy. Cancellation does not start a deployment.',['Use precise action descriptions.','Keep the target readable.','Keep sign out separate from workflow actions.'],'ProfileView.swift · repository, about, signOut'],
+['sign-in','iOS','Sign in','person','One clear action, with a useful reason when it is unavailable.',['Ready','Error','Not configured'],'P2','Give sign-in failures a next step','The current disabled button relies on opacity. It does not explain missing configuration in the view.',['Explain the disabled state.','Keep a retry action after an error.','Use a layout that scrolls with larger text.'],'SignInView.swift · SignInView'],
+['device-code','iOS','Device code','person','Copy the code, open GitHub, and return to the app.',['Waiting','Network notice','Expired'],'P2','Make the handoff explicit','iOS already offers copy. The proposed layout keeps that behavior and clarifies the steps.',['Keep Copy and Open GitHub separate.','Show authorization notices.','Offer a new code after expiry.'],'SignInView.swift · DeviceCodeView'],
+['mac-menu','macOS','Menu','server','Keep a small, useful menu with a bounded content region.',['Attention','Passed','Running','Loading','Stale','Error','Long list'],'P1','Keep the menu within the display','The current menu has a fixed width and renders all pull requests without a bounded scroll area.',['Keep the footer visible.','Use separate links and write buttons.','Show data age and request errors.'],'MenuView.swift · SignedInMenu; RunRowView; PullRequestRowView'],
+['mac-pull-detail','macOS','PR description','pull','Read a pull request in a separate, scrollable window.',['Description','No description','Loading','Stale','Error','Conflicts'],'P2 proposal','Give the description room to read','The current Mac pull request row opens GitHub. No description view exists.',['Open a small detail window from the menu.','Keep the full body and merge readiness visible.','Keep external GitHub access as a secondary action.'],'PullRequestRowView.swift; GitHubClient.swift · pullRequestQuery'],
+['mac-settings','macOS','Settings','settings','A native grouped form with clear account and login-item states.',['Signed in','Signed out','Approval required','Error'],'P2','Show the account and recovery path','The current Settings view explains the token but does not show the account identity.',['Show the signed-in account.','Preserve the login-item recovery control.','Use a deliberate sign-out action.'],'SettingsView.swift · account, launchAtLogin'],
+['mac-sign-in','macOS','Sign in','person','Keep sign in compact and explain a disabled state.',['Ready','Error','Not configured'],'P2','Keep sign in actionable','The current menu disables sign in when configuration is absent without an inline reason.',['Show the configuration state.','Keep the error next to Retry.','Keep Quit available.'],'MenuView.swift · SignInPanel'],
+['mac-device','macOS','Device code','person','Give the Mac the same clear authorization handoff.',['Waiting','Network notice','Expired'],'P2','Add an explicit Copy action','The current Mac code is selectable, but it has no Copy button or authorization notice.',['Add Copy code.','Show authorization notices.','Keep Open GitHub and Cancel.'],'MenuView.swift · DeviceCodePanel'],
+['widget-status','Widgets','Workflows','home','A status glance with explicit age and a useful destination.',['Attention','Passed','Running','Stale','No data'],'P1','Make old data visible','The current small and lock-screen families do not consistently show the last read time.',['Keep a status word beside the symbol.','Show Cached with the read age.','Open the Home tab without a write.'],'StatusWidget.swift · StatusWidgetView'],
+['widget-health','Widgets','Service health','health','Never present zero observed services as healthy.',['Attention','Healthy','Stale','No data'],'P1','Give no-data its own state','The current medium view can show 0/0 and all up. The rectangular view can show a success symbol with no reading.',['Show No reading with a neutral symbol.','Show the failed service first.','Open Health from every family.'],'HealthWidget.swift · isHealthy, medium, rectangular'],
+['widget-pulls','Widgets','Pull requests','pull','Keep unknown separate from no open pull requests.',['Mixed','Empty','Stale','No data'],'P1','Do not turn a failed read into zero','The current entry holds a list and a stale flag. It does not retain the last successful read time.',['Retain a read timestamp.','Label cached and unknown data.','Open Pull requests from the widget.'],'PullRequestsWidget.swift · PullRequestEntry']
+].map(([id,platform,title,glyph,description,states,priority,note,current,improvements,source])=>({id,platform,title,glyph,description,states,priority,note,current,improvements,source}));
+const preview=document.querySelector('#preview');
+const selection={id:screens.some(screen=>screen.id===location.hash.slice(1))?location.hash.slice(1):'home',state:'',theme:'light',scale:'1',width:'375',family:'Medium',range:'6H',healthRange:'6H',expandedHealthHost:null,level:'All',host:'All hosts',container:'All containers',search:''};
+let toastTimer;let returnScreen='home';let inspectedLog=0;let inspectedPullRequest=128;let pullRequestOrigin={id:'pulls',state:'Mixed',scrollTop:0};const submittedActions=new Set();const actionFeedback=new Map();
+
+function screen(){return screens.find(item=>item.id===selection.id)}
+function showToast(message){document.querySelector('#toast').textContent=message;clearTimeout(toastTimer);toastTimer=setTimeout(()=>document.querySelector('#toast').textContent='',4500)}
+function button(text,action,classes='',extra=''){return `<button type="button" class="${classes}" data-action="${action}" ${extra}>${text}</button>`}
+function badge(text,tone=''){return `<span class="badge ${tone}">${text}</span>`}
+function card(content,classes=''){return `<section class="card ${classes}">${content}</section>`}
+function link(text,url='https://github.com/BenSuskins/homelab/actions'){return `<a href="${url}" target="_blank" rel="noopener">${text} ${icon('external')}</a>`}
+function notice(title,message,action='retry',label='Retry'){return `<div class="notice"><strong>${title}</strong><p>${message}</p>${action?button(label,action):''}</div>`}
+function empty(title,message,glyph='logs',action='retry',label='Refresh'){return `<div class="center-state">${icon(glyph)}<h3>${title}</h3><p>${message}</p>${action?button(label,action,'secondary'):''}</div>`}
+function bars(){return `<div class="bars" aria-hidden="true">${[35,58,41,65,43,57,72,46,61,48,55,39,64,51,72,45,60,49,55,82].map(value=>`<i style="height:${value}%"></i>`).join('')}</div><p class="legend">Last 20 completed runs · 19 passed, 1 failed</p>`}
+function segments(values,selected,action='range'){return `<div class="segmented" role="group" aria-label="Time range">${values.map(value=>button(value,action,'',`data-value="${value}" aria-pressed="${selected===value}"`)).join('')}</div>`}
+function sharedState(){const value=selection.state;if(value==='Loading')return empty('Loading '+(screen().id.includes('pull')?'pull requests':screen().id.includes('health')?'health':screen().id==='logs'?'logs':'workflows'),'Waiting for the first response.','clock','', '');if(value==='Unavailable')return empty('Cannot reach '+(screen().id==='health'?'Prometheus':'Loki'),'Check Tailscale and the server connection. GitHub screens remain available.','network','retry','Try again');if(value==='No data')return empty('Status unknown','No successful reading is available. Refresh to request a reading.','clock');if(value==='Error')return notice('Could not load '+screen().title.toLowerCase(),'The server request fails. This screen has no current reading.','retry')+empty('No current reading','Retry the request or check the source.','network','', '');return ''}
+function staleNotice(){return selection.state==='Stale'?notice('Cached · last read 24 minutes ago','The last refresh fails. These values can change.','retry'):''}
+function workflow(name,status,time){const tone=status==='Failed'?'bad':status==='Running'?'progress':status==='Awaiting approval'?'warn':'good';if(screen().platform==='macOS')return card(`<div class="row"><div>${link(name)}<p class="small ${tone}">${status} · ${time}</p></div>${button(status==='Running'?'Cancel':'Run',status==='Running'?'cancel-workflow':'run-workflow','secondary',`aria-label="${status==='Running'?'Cancel':'Run'} ${name}" data-workflow="${name}"`)}</div>`);return card(`<div class="spread"><h3>${name}</h3>${badge(status,tone)}</div><p class="small">${time}</p>${name==='Update'&&screen().platform==='iOS'?bars():''}<div class="actionbar">${link('View run')}${button((status==='Running'||status==='Awaiting approval')?'Cancel':'Run',(status==='Running'||status==='Awaiting approval')?'cancel-workflow':'run-workflow','secondary',`aria-label="${(status==='Running'||status==='Awaiting approval')?'Cancel':'Run'} ${name}" data-workflow="${name}"`)}</div>`)}
+function home(){const fallback=sharedState();if(fallback)return fallback;const attention=selection.state==='Attention';const running=selection.state==='Running';const awaiting=selection.state==='Awaiting approval';return staleNotice()+card(`<div class="row"><span class="hero-symbol ${attention?'bad':running?'progress':awaiting?'warn':'good'}">${icon(attention||awaiting?'warning':running?'clock':'check')}</span><div><h3>${attention?'Update needs attention':running?'Update is running':awaiting?'Update awaits approval':'All workflows passed'}</h3><p class="small">${attention?'The latest Update run fails. Review the run before retry.':running?'The workflow starts. Open the run to check progress.':awaiting?'Open the run on GitHub to review the pending approval.':'The latest run of each workflow passes.'}</p></div></div><p class="small muted">GitHub · ${selection.state==='Stale'?'last read 24 min ago':'updated just now'}</p>`,'hero')+`<h3>Workflows</h3>`+workflow('Update',attention?'Failed':running?'Running':awaiting?'Awaiting approval':'Passed','Latest run · 08:42 · duration 4m 12s')+workflow('Terraform','Passed','Latest run · 07:15 · duration 1m 08s')+workflow('Clean','Passed','Latest run · Yesterday · duration 42s')+`<h3>Last 7 days</h3><div class="summary-grid"><div><strong>95%</strong><span>Run pass rate</span></div><div><strong>7</strong><span>Deployments</span></div><div><strong>3</strong><span>Open PRs</span></div></div><h3>Recent activity</h3>`+card('<div class="spread"><span>Terraform</span>'+badge('Passed','good')+'</div><p class="small">Today, 07:15 · 1m 08s</p>'+link('View activity'))+`<h3>Links</h3><div class="actionbar">${link('GitHub', 'https://github.com/BenSuskins/homelab')}${link('Actions')}</div>`}
+const pullRequestSamples = new Map([
+    [128, {number:128,title:'Update container images',readiness:'Ready',body:`<p>This pull request updates two container images to their next patch versions.</p><h4>Updates</h4><div class="description-table"><table><caption>Sample image versions</caption><thead><tr><th scope="col">Service</th><th scope="col">Current</th><th scope="col">Proposed</th></tr></thead><tbody><tr><th scope="row">Media service</th><td><code>2.4.1</code></td><td><code>2.4.2</code></td></tr><tr><th scope="row">Metrics exporter</th><td><code>1.8.0</code></td><td><code>1.8.1</code></td></tr></tbody></table></div><h4>Release notes</h4><p>The media service fixes a database timeout. The exporter fixes a missing metric label.</p><h4>Deployment</h4><ul><li>Squash merge into <code>main</code>.</li><li>The merge starts Update Homelab.</li><li>Check service health after the workflow finishes.</li></ul><blockquote><p>These descriptions and versions are sample data for the design review.</p></blockquote>`}],
+    [127, {number:127,title:'Update Terraform provider',readiness:'Ready',body:`<p>This pull request updates the Terraform provider used by the infrastructure roots.</p><h4>Reason</h4><p>The provider update fixes resource refresh after a connection timeout.</p><h4>Validation</h4><ul><li>Review the Terraform plan before apply.</li><li>Check all three infrastructure roots.</li></ul><h4>Deployment</h4><p>Squash merge into <code>main</code> to start Update Homelab.</p><blockquote><p>This is a sample pull request body.</p></blockquote>`}],
+    [126, {number:126,title:'Update monitoring dependencies',readiness:'Conflicts',body:`<p>This pull request updates the monitoring dependencies.</p><h4>Reason</h4><p>The update includes fixes to metric collection and dashboard labels.</p><h4>Before merge</h4><p>This branch conflicts with <code>main</code>. Resolve the conflict on GitHub, then refresh this pull request.</p><h4>Validation</h4><ul><li>Check that metrics arrive from each host.</li><li>Check the service health dashboard.</li></ul><blockquote><p>This is a sample pull request body.</p></blockquote>`}]
+]);
+function escapeText(value){return String(value).replace(/[&<>"']/g,character=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]))}
+function pullRequestSample(number,title,readiness){
+    const existing=pullRequestSamples.get(number);
+    if(existing&&(!title||existing.title===title))return existing;
+    const sample={number,title:title||'Update dependencies',readiness:readiness||'Conflicts',body:`<p>This pull request proposes ${escapeText((title||'a dependency update').toLowerCase())}.</p><h4>Review</h4><p>Read the update notes and resolve any conflicts before merge.</p><blockquote><p>This is a sample pull request body.</p></blockquote>`};
+    pullRequestSamples.set(number,sample);
+    return sample;
+}
+function selectedPullRequest(){return pullRequestSamples.get(inspectedPullRequest)||pullRequestSamples.get(128)}
+function pullCard(number,title,state){
+    pullRequestSample(number,title,state);
+    const detail=button(`<span class="spread">${badge('#'+number)}${badge(state,state==='Ready'?'good':'warn')}</span><strong class="pull-title">${escapeText(title)}</strong><span class="small">renovate · opened 2 hours ago</span><span class="read-description">Read description ›</span>`,'open-pr','pull-open',`data-number="${number}" aria-label="Read description of pull request ${number}: ${escapeText(title)}"`);
+    return card(detail+(state==='Ready'?`<div class="actionbar"><span class="small">Merge starts Update</span>${button('Merge','merge-pr','secondary',`data-number="${number}" aria-label="Merge of pull request ${number}"`)}</div>`:''));
+}
+function pullRequestDetail(){
+    const pullRequest=selectedPullRequest();
+    const conflict=selection.state==='Conflicts'||pullRequest.readiness!=='Ready';
+    const stale=selection.state==='Stale';
+    const summary=card(`<div class="spread">${badge('#'+pullRequest.number)}${badge(conflict?'Conflicts':'Ready to merge',conflict?'warn':'good')}</div><h3 style="margin-top:12px">${escapeText(pullRequest.title)}</h3><p class="small">renovate · opened 2 hours ago</p><p class="small">BenSuskins / homelab · into main</p>`);
+    if(selection.state==='Loading')return summary+empty('Loading description','The pull request title stays visible while its body loads.','clock','', '');
+    if(selection.state==='Error')return summary+notice('Cannot load the description','Keep this pull request open and retry the read.','retry-description','Retry description');
+    const stateNotice=stale?notice('Cached description · read 24 minutes ago','Refresh the pull request before a merge.','retry-description','Refresh pull request'):'';
+    const body=selection.state==='No description'?card('<p class="small">No description provided.</p>'):card(`<article class="description" aria-label="Pull request description">${pullRequest.body}</article>`);
+    const merge=conflict?notice('Resolve the merge conflict','Open this pull request on GitHub to update the branch.','', ''):button('Merge','merge-pr','primary full',`data-number="${pullRequest.number}" ${stale?'disabled':''}`);
+    return summary+stateNotice+'<h3>Description</h3>'+body+merge+`<div class="actionbar">${link('Open on GitHub',`https://github.com/BenSuskins/homelab/pull/${pullRequest.number}`)}</div>`;
+}
+function pulls(){const fallback=sharedState();if(fallback)return fallback;if(selection.state==='Empty')return empty('No open pull requests','The latest GitHub read succeeds. Updated just now.','check');return staleNotice()+`<p class="small">GitHub · ${selection.state==='Stale'?'last read 24 min ago':'updated just now'}</p><h3>Ready to merge · 2</h3>`+pullCard(128,'Update container images','Ready')+pullCard(127,'Update Terraform provider','Ready')+`<h3>Waiting · 1</h3>`+pullCard(126,'Update monitoring dependencies','Conflicts')}
+const healthKinds=[{id:'cpu',title:'CPU'},{id:'memory',title:'Memory'},{id:'disk',title:'Disk'},{id:'load',title:'Load'}];
+const healthHosts=[
+    {name:'Media',cpu:.12,memory:.86,disk:.63,load:1.2,services:['Plex','Sonarr','Radarr','Prowlarr','qBittorrent','Overseerr']},
+    {name:'Docker',cpu:.19,memory:.66,disk:.48,load:.84,services:['Family Hub','Races','Homepage','Traefik','Authelia']},
+    {name:'Development',cpu:.07,memory:.42,disk:.38,load:.22,services:['Development API','Registry','Workbench','Preview']},
+    {name:'Monitoring',cpu:.08,memory:.43,disk:.34,load:.38,services:['Prometheus','Grafana','Loki','Alloy','Gatus']},
+    {name:'Bumblebee',cpu:.24,memory:.57,disk:.41,load:1.85,services:['Build agent','Node exporter','Runner','Artifact cache']},
+    {name:'AI',cpu:.16,memory:.71,disk:.52,load:.76,services:['Ollama','Open WebUI','Model API']}
+];
+function healthProblems(){return selection.state==='Attention'||selection.state==='Stale'}
+function healthData(){return healthHosts.map((host,index)=>({...host,index,memory:host.name==='Media'&&!healthProblems() ? .64 : host.memory,...(selection.state==='Host no data'&&host.name==='AI'?{cpu:null,memory:null,disk:null,load:null}:{})}))}
+function healthFormat(kind,value){return value==null?'—':kind==='load'?value.toFixed(2):Math.round(value*100)+'%'}
+function healthTone(kind,value){if(value==null)return 'muted';const limits=kind==='load'?[4,8]:kind==='cpu'?[.75,.9]:[.8,.9];return value>=limits[1]?'bad':value>=limits[0]?'warn':''}
+function healthHistory(host,kind){
+    const latest=host[kind];
+    if(latest==null)return [];
+    const windowFactor={'1H':.65,'6H':1,'24H':1.25,'7D':1.5}[selection.healthRange];
+    const shape=[-1.8,-1.6,-1.8,-1.3,-1.2,-.8,-.9,-.6,-.4,-.5,-.2,.1,.3,.6,.2,.4,.1,0];
+    const amplitude=(kind==='load'?Math.max(latest*.17,.06):.05)*windowFactor;
+    return shape.map((offset,index)=>{const change=host.name==='Media'&&kind==='memory'?offset:(Math.sin(index*.71+host.index)-Math.sin(17*.71+host.index))*.45;const value=latest+change*amplitude;return kind==='load'?Math.max(0,value):Math.max(0,Math.min(1,value))});
+}
+function healthTimeLabels(){return {'1H':['−1h','−30m','Now'],'6H':['−6h','−3h','Now'],'24H':['−24h','−12h','Now'],'7D':['−7d','−3.5d','Now']}[selection.healthRange]}
+function healthPlot(values,maximum,kind,description,step=false){
+    const width=320,top=9,bottom=77,right=280;
+    const coordinates=values.map((value,index)=>[index/(values.length-1)*right,bottom-value/maximum*(bottom-top)]);
+    const line=coordinates.map(([x,y],index)=>index===0?'M'+x.toFixed(1)+' '+y.toFixed(1):(step?'H'+x.toFixed(1)+'V'+y.toFixed(1):'L'+x.toFixed(1)+' '+y.toFixed(1))).join(' ');
+    const area=line+' L'+right+' '+bottom+' L0 '+bottom+' Z';
+    const labels=healthTimeLabels();
+    const tone=step?(Math.max(...values)>0?'bad':''):healthTone(kind,values.at(-1));
+    return `<svg class="health-chart ${tone}" viewBox="0 0 ${width} 100" role="img" aria-label="${escapeText(description)}"><g class="chart-guides"><path d="M0 ${top}H${right}M0 ${(top+bottom)/2}H${right}M0 ${bottom}H${right}"/></g><path class="chart-area" d="${area}"/><path class="chart-line" d="${line}"/><circle class="chart-current" cx="${right}" cy="${coordinates.at(-1)[1].toFixed(1)}" r="2.5"/><g class="chart-text"><text x="${right+8}" y="${top+4}">${kind==='services'?maximum:healthFormat(kind,maximum)}</text><text x="${right+8}" y="${bottom+3}">${kind==='load'?'0.0':kind==='services'?'0':'0%'}</text><text x="0" y="97">${labels[0]}</text><text x="${right/2}" y="97" text-anchor="middle">${labels[1]}</text><text x="${right}" y="97" text-anchor="end">${labels[2]}</text></g></svg>`;
+}
+function healthMetricChart(host,kind){
+    const values=healthHistory(host,kind.id);
+    const peak=Math.max(...values);
+    const maximum=kind.id==='load'?Math.max(1,Math.ceil(peak*1.2)):1;
+    const description=host.name+' '+kind.title+', '+selection.healthRange+': latest '+healthFormat(kind.id,host[kind.id])+', peak '+healthFormat(kind.id,peak);
+    return `<figure class="health-metric-chart"><figcaption><strong>${kind.title}</strong><span class="small">Latest ${healthFormat(kind.id,host[kind.id])} · peak ${healthFormat(kind.id,peak)}</span></figcaption>${healthPlot(values,maximum,kind.id,description)}</figure>`;
+}
+function healthSparkline(host,kind){
+    const values=healthHistory(host,kind.id),minimum=Math.min(...values),maximum=Math.max(...values),span=Math.max(.02,maximum-minimum);
+    const line=values.map((value,index)=>(index?'L':'M')+(index/(values.length-1)*100).toFixed(1)+' '+(19-(value-minimum)/span*16).toFixed(1)).join(' ');
+    return `<span class="host-trend"><span>${kind.title} · ${selection.healthRange}</span><svg class="host-spark ${healthTone(kind.id,host[kind.id])}" viewBox="0 0 100 24" aria-hidden="true"><path d="${line}"/></svg></span>`;
+}
+function healthHostRow(host){
+    const reporting=healthKinds.some(kind=>host[kind.id]!=null);
+    const leading=healthKinds.filter(kind=>kind.id!=='load'&&host[kind.id]!=null).sort((left,right)=>host[right.id]-host[left.id])[0];
+    const stressed=healthKinds.filter(kind=>healthTone(kind.id,host[kind.id])==='warn'||healthTone(kind.id,host[kind.id])==='bad');
+    const status=!reporting?'No data':stressed.length?stressed.map(kind=>kind.title+' high').join(' · '):'Nominal';
+    const tone=!reporting?'muted':stressed.some(kind=>healthTone(kind.id,host[kind.id])==='bad')?'bad':stressed.length?'warn':'muted';
+    const metrics=healthKinds.map(kind=>`<span><span class="metric-label">${kind.title}</span><strong class="${healthTone(kind.id,host[kind.id])}">${healthFormat(kind.id,host[kind.id])}</strong></span>`).join('');
+    return `<details class="host-data" name="health-host" data-host="${host.name}" ${selection.expandedHealthHost===host.name?'open':''}><summary aria-label="${host.name}: ${status}. ${healthKinds.map(kind=>kind.title+' '+healthFormat(kind.id,host[kind.id])).join(', ')}. Host history"><span class="host-heading"><strong>${host.name}</strong><span class="host-state ${tone}">${status}<span class="host-chevron" aria-hidden="true">⌄</span></span></span><span class="host-readings">${metrics}</span>${reporting?healthSparkline(host,leading):'<span class="small muted">No host metrics are available.</span>'}</summary><div class="host-charts">${reporting?healthKinds.map(kind=>healthMetricChart(host,kind)).join(''):'<p class="small">The next successful read restores these charts.</p>'}</div></details>`;
+}
+function health(){
+    const fallback=sharedState();if(fallback)return fallback;
+    const hosts=healthData(),services=hosts.flatMap(host=>host.services.map(name=>({host:host.name,name,up:!(healthProblems()&&host.name==='Media'&&name==='Plex')})));
+    const up=services.filter(service=>service.up).length;
+    const reporting=hosts.filter(host=>host.cpu!=null).length;
+    const strained=hosts.filter(host=>healthKinds.some(kind=>['warn','bad'].includes(healthTone(kind.id,host[kind.id])))).length;
+    const peak=hosts.flatMap(host=>healthKinds.filter(kind=>kind.id!=='load'&&host[kind.id]!=null).map(kind=>({host:host.name,kind:kind.title,value:Math.max(...healthHistory(host,kind.id))}))).sort((left,right)=>right.value-left.value)[0];
+    const down=services.length-up;
+    const failures=Array.from({length:18},(_,index)=>index<3?0:index<6?({'1H':1,'6H':1,'24H':2,'7D':3}[selection.healthRange]):down);
+    const peakDown=Math.max(...failures);
+    const age=selection.state==='Stale'?'Cached · 24 min ago':'Updated just now';
+    const summary=`<div class="health-overview" aria-label="Health summary"><div><strong class="${down?'bad':''}">${up}<span class="metric-denominator">/${services.length}</span></strong><span class="metric-label">Services up</span><span class="metric-detail">${(up/services.length*100).toFixed(1)}% available</span></div><div><strong>${hosts.length}</strong><span class="metric-label">Hosts</span><span class="metric-detail ${strained?'warn':''}">${reporting<hosts.length?reporting+' reporting':strained?strained+' strained':'All nominal'}</span></div><div><strong class="${healthTone(peak.kind.toLowerCase(),peak.value)}">${Math.round(peak.value*100)}%</strong><span class="metric-label">Peak ${peak.kind.toLowerCase()}</span><span class="metric-detail">${peak.host}</span></div></div>`;
+    const current=down?`<p class="health-status bad">${icon('warning')}<span><strong>Plex is down</strong> · Media</span></p>`:`<p class="health-status ${reporting<hosts.length?'warn':'good'}">${icon(reporting<hosts.length?'warning':'check')}<span>${reporting<hosts.length?'AI is not reporting host metrics':'All services are up'}</span></p>`;
+    const availability=`<section class="health-availability" aria-label="Availability history"><div class="health-section-heading"><h3>Availability</h3><span>Endpoints failing</span></div>${healthPlot(failures,Math.max(1,peakDown),'services','Failed services over '+selection.healthRange+': latest '+down+', peak '+peakDown,true)}<p class="small muted">Latest ${down} · peak ${peakDown} · ${selection.healthRange}</p></section>`;
+    const groups=hosts.map(host=>{const group=services.filter(service=>service.host===host.name);const failed=group.filter(service=>!service.up).length;return `<section class="service-group" aria-label="${host.name} services"><div class="health-section-heading"><h4>${host.name}</h4><span class="${failed?'bad':'muted'}">${group.length-failed}/${group.length} up</span></div><div class="service-grid">${group.map(service=>`<div class="service-row"><span class="service-name">${service.name}</span><span class="service-state ${service.up?'muted':'bad'}">${service.up?'Up':'Down'}</span></div>`).join('')}</div></section>`}).join('');
+    return `<div class="health-dashboard"><div class="health-toolbar">${segments(['1H','6H','24H','7D'],selection.healthRange,'health-range')}</div><p class="health-age">${age} · Prometheus</p>${staleNotice()}${summary}${current}${availability}<section class="health-hosts"><div class="health-section-heading"><h3>Hosts</h3><span>${reporting}/${hosts.length} reporting</span></div>${hosts.map(healthHostRow).join('')}</section><section class="health-services"><div class="health-section-heading"><h3>Services</h3><span>${services.length} endpoints</span></div>${groups}</section></div>`;
+}
+
+const logRows=[{level:'Error',time:'08:42:17.204',ingested:'08:42:17.309',container:'media-library',host:'Media',message:'Cannot connect to the library database. Connection timeout after 30 seconds.'},{level:'Warning',time:'08:41:52.081',ingested:'08:41:52.186',container:'media-library',host:'Media',message:'The database query takes longer than expected.'},{level:'Info',time:'08:40:10.516',ingested:'08:40:10.621',container:'grafana',host:'Monitoring',message:'Dashboard cache refresh completes.'}];
+function logEntries(){const visible=logRows.filter(row=>(selection.level==='All'||row.level===selection.level)&&(selection.host==='All hosts'||row.host===selection.host)&&(selection.container==='All containers'||row.container===selection.container)&&row.message.toLowerCase().includes(selection.search.toLowerCase()));return visible.length?visible.map(row=>button(`<span class="log-meta"><span>${row.container} · ${row.host}</span><strong class="${row.level==='Error'?'bad':row.level==='Warning'?'warn':''}">${row.level}</strong></span><span class="log-message">${row.message}</span><span class="small muted">${row.time} · View full line ›</span>`,'open-log','log-entry',`data-entry="${logRows.indexOf(row)}"`)).join(''):empty('No matching lines','Clear the local search or change the filters.','logs','clear-filters','Clear filters')}
+function logs(){const fallback=sharedState();if(fallback)return fallback;return staleNotice()+`<div class="filters"><label>Host<select id="host-filter"><option>All hosts</option><option>Media</option><option>Monitoring</option></select></label><label>Container<select id="container-filter"><option>All containers</option><option>media-library</option><option>grafana</option></select></label></div>`+segments(['15M','1H','6H','24H'],['15M','1H','6H','24H'].includes(selection.range)?selection.range:'1H')+`<label class="search-label">Search fetched lines<input id="log-search" type="search" placeholder="Find in these lines" autocomplete="off"></label><div class="spread">${badge(selection.state==='Live'?'Live':'Paused',selection.state==='Live'?'good':'')}${button(selection.state==='Live'?'Pause stream':'Start live stream','toggle-live','secondary')}</div><div class="chips" role="group" aria-label="Log level">${['All','Error','Warning','Info'].map((level,index)=>button(level+' '+[3,1,1,1][index],'level','',`aria-pressed="${selection.level===level}" data-value="${level}"`)).join('')}</div><p class="small">Latest 500 lines at most · Level and search filter these lines.</p><div id="log-results">${selection.state==='Empty'?empty('No logs in this window','Change the host, container, or time range.','logs','clear-filters','Clear filters'):logEntries()}</div>`}
+function rawLog(){return JSON.stringify({level:logRows[inspectedLog].level.toLowerCase(),message:logRows[inspectedLog].message,host:logRows[inspectedLog].host,container:logRows[inspectedLog].container},null,2)}
+function logDetail(){const entry=logRows[inspectedLog];const plain=selection.state==='Plain';return card(badge(plain?'Warning · inferred':entry.level+' · declared',plain?'warn':entry.level==='Error'?'bad':'')+' '+badge(plain?'Plain text':'JSON')+'<h3 style="margin-top:12px">'+entry.container+'</h3><p class="small">'+entry.host+'</p><p class="small">22 Oct 2026 · '+entry.time+'</p>')+`<h3>Message</h3>`+card('<p>'+entry.message+'</p>'+button('Copy message','copy-message','secondary full'))+`<h3>Fields</h3>`+card('<dl class="pairs"><dt>container</dt><dd>'+entry.container+'</dd><dt>host</dt><dd>'+entry.host+'</dd></dl>')+`<h3>Stream labels</h3>`+card('<dl class="pairs"><dt>host</dt><dd>'+entry.host+'</dd><dt>container</dt><dd>'+entry.container+'</dd></dl>')+card('<dl class="pairs"><dt>Written</dt><dd>'+entry.time+'</dd><dt>Ingested</dt><dd>'+entry.ingested+'</dd></dl>')+`<details class="card"><summary>Raw line</summary><pre class="code">${plain?'[WARN] '+entry.message:rawLog()}</pre>${button('Copy raw line','copy-raw','secondary full')}</details>`+button('Show only '+entry.container,'isolate','secondary full')}
+function account(){return card(`<div class="row">${icon('person')}<div><h3>${selection.state==='Viewer unavailable'?'Signed in':'Ben Suskins'}</h3><p class="small">${selection.state==='Viewer unavailable'?'Account details are unavailable.':'@BenSuskins'}</p></div></div>${link('Open GitHub profile','https://github.com/BenSuskins')}`)+`<h3>Target</h3>`+card('<dl class="pairs"><dt>Repository</dt><dd>BenSuskins/homelab</dd><dt>Branch</dt><dd>main</dd><dt>GitHub read</dt><dd>Just now</dd></dl>')+`<h3>App behavior</h3>`+card('<h3>Device authentication</h3><p class="small">iOS requests Face ID or the passcode before writes when the device supports the current policy.</p><h3 style="margin-top:16px">Health and logs</h3><p class="small">Prometheus and Loki require a connection through Tailscale. GitHub works separately.</p><h3 style="margin-top:16px">Widgets</h3><p class="small">Widgets show the last reading. iOS controls their refresh time.</p>')+`<h3>Session</h3>`+button('Sign out…','sign-out','danger full')}
+function signIn(){return `<div class="center-state">${icon('server')}<h3>Homelab</h3><p>Check workflows, review pull requests, and monitor the homelab.</p></div>`+(selection.state==='Error'?notice('GitHub sign-in fails','Check the connection and try again.','', ''):'')+(selection.state==='Not configured'?notice('GitHub sign-in is not configured','The app build needs an OAuth client ID. Install a configured build.','', ''):'')+button(selection.state==='Error'?'Retry sign in':'Sign in with GitHub','sign-in','primary full',selection.state==='Not configured'?'disabled':'')+'<p class="small" style="text-align:center">GitHub opens in your browser. The app stores the token in the Keychain.</p>'}
+function deviceCode(){if(selection.state==='Expired')return empty('This code is no longer valid','Request a new code to continue.','clock','new-code','Get a new code');return `<ol class="steps"><li>Copy the code.</li><li>Open GitHub and enter the code.</li><li>Return to Homelab.</li></ol><div class="code-panel">ABCD-EFGH</div>`+button('Copy code','copy-code','secondary full')+button('Open GitHub ↗','open-github','primary full')+'<p class="small" style="text-align:center">Waiting for authorization</p>'+(selection.state==='Network notice'?notice('The authorization check fails','Keep this code. The app resumes the check when the connection returns.','', ''):'<p class="small" style="text-align:center">Return to this app after GitHub accepts the code.</p>')+button('Cancel','cancel-sign-in','full')}
+function macMenu(){if(selection.state==='Loading')return empty('Loading workflows','Waiting for GitHub.','clock','', '');const failed=selection.state==='Attention'||selection.state==='Long list';return staleNotice()+(selection.state==='Error'?notice('GitHub refresh fails','Showing the last successful reading.','retry'):'')+`<p class="small">GitHub · ${selection.state==='Stale'?'last read 24 min ago':'updated just now'}</p>`+workflow('Update',failed?'Failed':selection.state==='Running'?'Running':'Passed','Last run · 08:42')+workflow('Terraform','Passed','Last run · 07:15')+workflow('Clean','Passed','Last run · Yesterday')+`<h3>Pull requests · ${selection.state==='Long list'?'24':'3'}</h3>`+pullCard(128,'Update container images','Ready')+(selection.state==='Long list'?Array.from({length:10},(_,index)=>pullCard(124-index,'Update dependency group '+(index+1),'Conflicts')).join(''):pullCard(127,'Update Terraform provider','Ready')+pullCard(126,'Update monitoring dependencies','Conflicts'))+link('View all on GitHub','https://github.com/BenSuskins/homelab/pulls')+`<h3>Links</h3>`+link('Repository','https://github.com/BenSuskins/homelab')}
+function macSettings(){const signedOut=selection.state==='Signed out';return `<h3>General</h3>`+card(`<label class="spread"><span>Launch at login</span><input id="login-toggle" type="checkbox" checked style="width:20px;min-height:24px;margin:0" ${signedOut?'disabled':''}></label><p class="small">${signedOut?'Sign in to change this setting.':'Start Homelab when you log in.'}</p>${selection.state==='Approval required'?notice('Login item needs approval','Allow Homelab in System Settings.','login-settings','Open Login Items…'):''}${selection.state==='Error'?notice('Cannot change the login item','The system rejects the change. Keep the previous value.','login-settings','Open Login Items…'):''}`)+`<h3>GitHub</h3>`+card(signedOut?'<p>Not signed in.</p>'+button('Open sign in','settings-sign-in','secondary full'):'<h3>Ben Suskins</h3><p class="small">@BenSuskins · BenSuskins/homelab</p><p class="small">The token stays in your Keychain. Revoke access in GitHub Settings → Applications.</p>'+button('Sign out…','sign-out','danger full'))}
+function widget(){const health=selection.id==='widget-health',pull=selection.id==='widget-pulls',unknown=selection.state==='No data',stale=selection.state==='Stale';const label=health?'Services':pull?'Pull requests':'Workflows';const title=unknown?'No reading':health?(selection.state==='Healthy'?'27 / 27':'26 / 27'):pull?(selection.state==='Empty'?'0 open':'3 open'):(selection.state==='Passed'?'Passed':selection.state==='Running'?'Update running':'Update fails');const tone=unknown?'muted':health&&selection.state!=='Healthy'||!health&&!pull&&selection.state==='Running'?'progress':!health&&!pull&&selection.state!=='Passed'?'bad':'good';const description=unknown?'Open the app to refresh':health?(selection.state==='Healthy'?'All services are up':'Plex · Down'):pull?(selection.state==='Empty'?'Latest GitHub read succeeds':'2 ready · 1 waiting'):'Latest workflow status';const age=unknown?'No successful read':stale?'Cached · read 24 min ago':'Read 2 min ago';if(selection.family==='Inline')return button(`<span class="${tone}">${label} · ${title}</span><span class="small"> · ${age}</span>`,'widget-open','full');if(selection.family==='Circular')return `<button type="button" data-action="widget-open" style="text-align:center" aria-label="Open Home">${icon(unknown||selection.state==='Running'?'clock':title==='Passed'?'check':'warning')}<p class="small">${unknown?'Unknown':title}</p><span class="small">${unknown?'No data':stale?'Cached':'2 min'}</span></button>`;if(selection.family==='Rectangular')return button(`<strong>${label} · <span class="${tone}">${title}</span></strong><span class="small" style="display:block">${age}</span>`,'widget-open','full');return `<div class="spread"><h3>${label}</h3>${badge(stale?'Cached':unknown?'Unknown':'Last read',unknown?'muted':'')}</div><p class="stat ${tone}">${title}</p><p class="small">${description}</p>${selection.family==='Large'&&!unknown?'<div class="card"><p>Update · '+(selection.state==='Passed'?'Passed':selection.state==='Running'?'Running':'Failed')+'</p><p>Terraform · Passed</p><p>Clean · Passed</p></div>':''}<p class="widget-foot">${age}</p>${button('Open '+(health?'Health':pull?'Pull requests':'Home'),'widget-open','full')}`}
+function actionKey(control){return control.dataset.action+':'+(control.dataset.number||control.dataset.workflow)}
+function submitSampleAction(control){
+    const key=actionKey(control);
+    if(submittedActions.has(key))return;
+    const isMerge=control.dataset.action==='merge-pr';
+    const label=isMerge?'Squash merge #'+control.dataset.number:control.dataset.action==='cancel-workflow'?'Cancel '+control.dataset.workflow+' run':'Run '+control.dataset.workflow;
+    const authentication=screen().platform==='iOS'?'Sample Face ID succeeds. ':'';
+    const scrollTop=preview.querySelector('.scroll').scrollTop;
+    submittedActions.add(key);
+    actionFeedback.set(selection.id,label+' is accepted. Waiting for GitHub status. This is a sample result.');
+    render();
+    preview.querySelector('.scroll').scrollTop=scrollTop;
+    showToast(authentication+label+' request accepted. No write is sent.');
+}
+function screenContent(){switch(selection.id){case'home':return home();case'pulls':return pulls();case'pull-detail':case'mac-pull-detail':return pullRequestDetail();case'health':return health();case'logs':return logs();case'log-detail':return logDetail();case'account':return account();case'sign-in':case'mac-sign-in':return signIn();case'device-code':case'mac-device':return deviceCode();case'mac-menu':return macMenu();case'mac-settings':return macSettings();default:return widget()}}
+function navigate(id,state){selection.id=id;selection.state=state||screens.find(item=>item.id===id).states[0];selection.search='';history.replaceState(null,'','#'+id);render()}
+function render(){const active=screen();if(!active.states.includes(selection.state))selection.state=active.states[0];document.querySelector('#platform-label').textContent=active.platform==='iOS'?'iOS app':active.platform==='macOS'?'macOS menu bar app':'iOS widgets';document.querySelector('#screen-title').textContent=active.title;document.querySelector('#screen-description').textContent=active.description;document.querySelector('#priority').textContent=active.priority+' · '+(active.priority.includes('proposal')?'Behavior change':'Improvement');document.querySelector('#note-title').textContent=active.note;document.querySelector('#current-note').textContent=active.current;document.querySelector('#improvements').innerHTML=active.improvements.map(item=>'<li>'+item+'</li>').join('');document.querySelector('#source-note').textContent=active.source;document.querySelector('#navigation').innerHTML=['iOS','macOS','Widgets'].map(platform=>'<nav aria-label="'+platform+' screens"><h2>'+platform+'</h2>'+screens.filter(item=>item.platform===platform).map(item=>`<button type="button" class="nav-button" data-screen="${item.id}" ${item.id===selection.id?'aria-current="page"':''}>${icon(item.glyph)}${item.title}</button>`).join('')+'</nav>').join('')+'<div class="sidebar-footer">Source-led review<br>'+screens.length+' screen families · 14 widget variants<br>Native apps remain unchanged.</div>';document.querySelectorAll('.nav-button svg').forEach(element=>{element.style.width='16px';element.style.height='16px'});document.querySelector('#screen-select').innerHTML=screens.map(item=>`<option value="${item.id}">${item.platform} · ${item.title}</option>`).join('');document.querySelector('#screen-select').value=selection.id;document.querySelector('#state-select').innerHTML=active.states.map(value=>'<option>'+value+'</option>').join('');document.querySelector('#state-select').value=selection.state;const families=selection.id==='widget-status'?['Small','Medium','Large','Circular','Rectangular','Inline']:['Small','Medium','Rectangular','Inline'];if(!families.includes(selection.family))selection.family='Medium';document.querySelector('#family-select').innerHTML=families.map(value=>'<option>'+value+'</option>').join('');document.querySelector('#family-select').value=selection.family;document.querySelector('#family-control').hidden=active.platform!=='Widgets';document.querySelector('#width-control').hidden=active.platform!=='iOS';preview.className='preview '+(selection.theme==='dark'?'dark ':'')+(selection.scale==='2'?'large-text ':'')+(active.platform==='macOS'?'mac ':'')+(selection.id==='mac-settings'?'settings ':'')+(selection.id==='mac-pull-detail'?'pr-reader ':'')+(active.platform==='Widgets'?'widget '+(selection.family==='Circular'?'circular':selection.family==='Inline'?'inline':selection.family==='Small'?'small-widget':''):'');preview.classList.toggle('has-tabs',active.platform==='iOS'&&!['account','log-detail','sign-in','device-code'].includes(selection.id));preview.style.setProperty('--scale',selection.scale);if(active.platform==='iOS')preview.style.setProperty('--device-width',selection.width+'px');else preview.style.removeProperty('--device-width');let content=screenContent();const feedback=actionFeedback.get(selection.id);if(feedback)content=notice('Request accepted',feedback,'check-action','Check status')+content;if(active.platform==='Widgets'){preview.innerHTML=content;return}const isMac=active.platform==='macOS';const sheet=['account','log-detail'].includes(selection.id);const auth=selection.id.includes('sign-in')||selection.id.includes('device');const pullDetail=selection.id==='pull-detail'||selection.id==='mac-pull-detail';const header=pullDetail?`${isMac?'<div class="windowbar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><strong>Pull request #'+inspectedPullRequest+'</strong></div>':''}<div class="sheet-nav pull-nav">${button(isMac?'Back to menu':'‹ Pull requests','back-pr')}<strong>${isMac?'Description':'#'+inspectedPullRequest}</strong></div>`:isMac&&selection.id==='mac-settings'?'<div class="windowbar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><strong>Homelab Settings</strong></div>':sheet?`<div class="sheet-nav">${button('Back','go-back')}<strong>${active.title}</strong>${button('Done','sheet-done')}</div>`:`<div class="apphead"><div class="title-row"><h2>${selection.id==='home'||selection.id==='mac-menu'?'Homelab':active.title}</h2>${!isMac&&!auth?button('BS','account','avatar','aria-label="Account"'):''}</div>${selection.id==='home'||selection.id==='mac-menu'?'<p class="context">BenSuskins / homelab</p>':''}</div>`;const tabs=!isMac&&!sheet&&!auth?`<nav class="tabs" aria-label="App tabs">${[['home','Home','home'],['pulls','Pull requests','pull'],['health','Health','health'],['logs','Logs','logs']].map(([id,title,glyph])=>`<button type="button" data-screen="${id}" ${id===selection.id||(id==='pulls'&&selection.id==='pull-detail')?'aria-current="page"':''}>${icon(glyph)}<span>${title}</span></button>`).join('')}</nav>`:'';preview.innerHTML=(isMac?'':'<div class="statusbar" aria-hidden="true"><span>9:41</span><span class="island"></span><span>5G ▰</span></div>')+header+`<div tabindex="0" aria-label="${active.title} content" class="scroll ${sheet?'sheet':''}">${content}</div>`+tabs+(isMac&&selection.id!=='mac-settings'&&!pullDetail?`<footer class="menu-footer">${button('Refresh','retry')}${button('Settings…','open-settings')}${button('Quit','quit')}</footer>`:'');if(selection.id==='logs'){document.querySelector('#host-filter').value=selection.host;document.querySelector('#container-filter').value=selection.container;document.querySelector('#log-search').value=selection.search}preview.querySelectorAll('[data-action="run-workflow"],[data-action="cancel-workflow"],[data-action="merge-pr"]').forEach(control=>{if(submittedActions.has(actionKey(control))){control.disabled=true;control.title='Request accepted. Refresh to check the current status.'}})}
+document.addEventListener('click',event=>{const navigation=event.target.closest('[data-screen]');if(navigation){if(['pull-detail','mac-pull-detail'].includes(navigation.dataset.screen)){pullRequestOrigin={id:navigation.dataset.screen==='pull-detail'?'pulls':'mac-menu',state:navigation.dataset.screen==='pull-detail'?'Mixed':'Attention',scrollTop:0};}navigate(navigation.dataset.screen);return}const control=event.target.closest('[data-action]');if(!control||control.disabled)return;const action=control.dataset.action;switch(action){case'open-pr':pullRequestOrigin={id:selection.id,state:selection.state,scrollTop:preview.querySelector('.scroll')?.scrollTop||0};inspectedPullRequest=Number(control.dataset.number);navigate(screen().platform==='macOS'?'mac-pull-detail':'pull-detail');break;case'back-pr':navigate(pullRequestOrigin.id,pullRequestOrigin.state);preview.querySelector('.scroll').scrollTop=pullRequestOrigin.scrollTop;break;case'retry-description':selection.state='Description';render();showToast('Sample description refreshed. No GitHub request is sent.');break;case'account':returnScreen=selection.id;navigate('account');break;case'merge-pr':case'run-workflow':case'cancel-workflow':submitSampleAction(control);break;case'check-action':showToast('Sample request is accepted. The native app polls GitHub for progress.');break;case'go-back':case'sheet-done':navigate(returnScreen);break;case'retry':submittedActions.clear();actionFeedback.clear();selection.state=screen().states[0]==='Attention'?'Passed':screen().states[0];render();showToast('Sample refresh completes. No server request is sent.');break;case'health-range':selection.healthRange=control.dataset.value;render();break;case'range':selection.range=control.dataset.value;render();break;case'level':selection.level=control.dataset.value;render();break;case'toggle-live':selection.state=selection.state==='Live'?'Paused':'Live';render();showToast('Sample stream '+selection.state.toLowerCase()+'. No live connection is open.');break;case'open-log':inspectedLog=Number(control.dataset.entry);returnScreen='logs';navigate('log-detail');break;case'clear-filters':selection.host='All hosts';selection.container='All containers';selection.search='';selection.level='All';selection.state='Paused';render();break;case'isolate':selection.container=logRows[inspectedLog].container;navigate('logs');break;case'copy-code':case'copy-message':case'copy-raw':{const text=action==='copy-code'?'ABCD-EFGH':action==='copy-message'?logRows[inspectedLog].message:selection.state==='Plain'?'[WARN] '+logRows[inspectedLog].message:rawLog();if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(text).then(()=>showToast('Copied sample '+(action==='copy-code'?'code':action==='copy-raw'?'raw line':'message'))).catch(()=>showToast('Copy is unavailable. Select the sample text to copy it.'));else showToast('Copy is unavailable. Select the sample text to copy it.');break}case'sign-in':navigate(screen().platform==='macOS'?'mac-device':'device-code');break;case'new-code':selection.state='Waiting';render();break;case'cancel-sign-in':navigate(screen().platform==='macOS'?'mac-sign-in':'sign-in');break;case'open-github':showToast('Prototype handoff. Sample code is not sent to GitHub.');break;case'open-settings':navigate('mac-settings');break;case'settings-sign-in':navigate('mac-sign-in');break;case'login-settings':showToast('Prototype only. Native app opens macOS Login Items.');break;case'quit':showToast('Prototype only. The native app quits here.');break;case'sign-out':control.insertAdjacentHTML('afterend',`<div class="notice" role="group" aria-label="Sign out confirmation"><strong>Sign out of GitHub?</strong><p>This removes the token from the Keychain. Widgets can keep the last reading until refresh.</p>${button('Sign out','confirm-sign-out','danger')}${button('Keep signed in','keep-session')}</div>`);control.disabled=true;break;case'keep-session':render();break;case'confirm-sign-out':navigate(screen().platform==='macOS'?'mac-sign-in':'sign-in');showToast('Sample session signed out. No token is changed.');break;case'widget-open':navigate(selection.id==='widget-health'?'health':selection.id==='widget-pulls'?'pulls':'home');break}});
+document.addEventListener('change',event=>{switch(event.target.id){case'screen-select':navigate(event.target.value);return;case'state-select':selection.state=event.target.value;break;case'theme-select':selection.theme=event.target.value;break;case'text-select':selection.scale=event.target.value;break;case'width-select':selection.width=event.target.value;break;case'family-select':selection.family=event.target.value;break;case'host-filter':selection.host=event.target.value;break;case'container-filter':selection.container=event.target.value;break;case'login-toggle':showToast('Sample login preference changes. System settings stay unchanged.');return;default:return}render()});
+document.addEventListener('toggle',event=>{if(event.target.matches?.('.host-data')){if(event.target.open)selection.expandedHealthHost=event.target.dataset.host;else if(selection.expandedHealthHost===event.target.dataset.host)selection.expandedHealthHost=null}},true);
+document.addEventListener('input',event=>{if(event.target.id==='log-search'){selection.search=event.target.value;document.querySelector('#log-results').innerHTML=logEntries()}});
+document.addEventListener('keydown',event=>{if(event.key==='Escape'&&['pull-detail','mac-pull-detail'].includes(selection.id)){navigate(pullRequestOrigin.id,pullRequestOrigin.state);preview.querySelector('.scroll').scrollTop=pullRequestOrigin.scrollTop;return}if(event.key==='Escape'&&['account','log-detail'].includes(selection.id))navigate(returnScreen)});
+window.addEventListener('hashchange',()=>{if(screens.some(item=>item.id===location.hash.slice(1)))navigate(location.hash.slice(1))});
+if(new URLSearchParams(location.search).get('capture')==='1')document.body.classList.add('capture');
+document.querySelector('#brand-icon').innerHTML=icon('server');document.querySelector('#brand-icon svg').setAttribute('width','23');document.querySelector('#brand-icon svg').setAttribute('height','23');render();
+</script>
+</body>
+</html>

@@ -12,11 +12,11 @@ import SwiftUI
 /// inversion: the ladder is canvas → surface → raised, borders are one step off
 /// the surface they sit on, and text runs primary → secondary → tertiary.
 public struct Palette: Sendable, Equatable {
-    /// Behind everything. Never used for a card.
+    /// The flat content background.
     public let canvas: Color
-    /// The default card.
+    /// The content surface.
     public let surface: Color
-    /// A card on a card — a metric tile inside a section, a selected segment.
+    /// A grouped control or selected segment.
     public let surfaceRaised: Color
     /// Hairlines. Visible, never loud.
     public let border: Color
@@ -72,37 +72,37 @@ public struct Palette: Sendable, Equatable {
     }
 
     public static let dark = Palette(
-        canvas: Color(hex: 0x08090A),
-        surface: Color(hex: 0x121315),
-        surfaceRaised: Color(hex: 0x1A1B1E),
-        border: Color(hex: 0x232428),
-        borderStrong: Color(hex: 0x33353B),
-        textPrimary: Color(hex: 0xEEEFF1),
-        textSecondary: Color(hex: 0x8A8F98),
-        textTertiary: Color(hex: 0x5E6167),
-        accent: Color(hex: 0x7A82E8),
-        accentMuted: Color(hex: 0x2A2C48),
-        positive: Color(hex: 0x4CB782),
-        warning: Color(hex: 0xE2A336),
-        negative: Color(hex: 0xE5534B),
-        inProgress: Color(hex: 0x4EA7FC)
+        canvas: Color(hex: 0x101318),
+        surface: Color(hex: 0x101318),
+        surfaceRaised: Color(hex: 0x1B2028),
+        border: Color(hex: 0x303945),
+        borderStrong: Color(hex: 0x455163),
+        textPrimary: Color(hex: 0xEDF0F4),
+        textSecondary: Color(hex: 0xB6BFCC),
+        textTertiary: Color(hex: 0xA4AFBE),
+        accent: Color(hex: 0x8AB7FF),
+        accentMuted: Color(hex: 0x1A2B45),
+        positive: Color(hex: 0x7BD4A8),
+        warning: Color(hex: 0xEDC477),
+        negative: Color(hex: 0xFF929B),
+        inProgress: Color(hex: 0x8AB7FF)
     )
 
     public static let light = Palette(
-        canvas: Color(hex: 0xF6F7F8),
+        canvas: Color(hex: 0xFFFFFF),
         surface: Color(hex: 0xFFFFFF),
-        surfaceRaised: Color(hex: 0xF1F2F4),
-        border: Color(hex: 0xE3E5E8),
+        surfaceRaised: Color(hex: 0xF2F4F7),
+        border: Color(hex: 0xE0E5EB),
         borderStrong: Color(hex: 0xCBCFD4),
-        textPrimary: Color(hex: 0x16171A),
-        textSecondary: Color(hex: 0x6B7076),
-        textTertiary: Color(hex: 0x9198A1),
-        accent: Color(hex: 0x5E6AD2),
-        accentMuted: Color(hex: 0xE7E9FA),
-        positive: Color(hex: 0x2F855A),
-        warning: Color(hex: 0xB7791F),
-        negative: Color(hex: 0xC53030),
-        inProgress: Color(hex: 0x2B6CB0)
+        textPrimary: Color(hex: 0x19202A),
+        textSecondary: Color(hex: 0x566170),
+        textTertiary: Color(hex: 0x626D7B),
+        accent: Color(hex: 0x225ED0),
+        accentMuted: Color(hex: 0xEDF2FC),
+        positive: Color(hex: 0x24734E),
+        warning: Color(hex: 0x86590C),
+        negative: Color(hex: 0xB52C36),
+        inProgress: Color(hex: 0x2567AD)
     )
 
     public static func forScheme(_ scheme: ColorScheme) -> Palette {
@@ -158,7 +158,7 @@ public struct Palette: Sendable, Equatable {
 }
 
 extension Color {
-    /// `0x1A1B1E` reads like the hex in a design file; three `Double`s divided
+    /// `0x1B2028` reads like the hex in a design file; three `Double`s divided
     /// by 255 do not.
     init(hex: UInt32) {
         self.init(

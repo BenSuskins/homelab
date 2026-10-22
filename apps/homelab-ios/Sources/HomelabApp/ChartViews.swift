@@ -46,7 +46,14 @@ struct RunDurationChart: View {
                 plot.background(palette.surfaceRaised.opacity(0.5))
             }
             .frame(height: height)
+            .accessibilityLabel("Workflow run durations")
+            .accessibilityValue(accessibleSummary)
         }
+    }
+
+    private var accessibleSummary: String {
+        bars.map { "\(RunStatusPresentation($0.status).label), \(RelativeTime.duration($0.duration))" }
+            .joined(separator: ", ")
     }
 }
 

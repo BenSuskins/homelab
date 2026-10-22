@@ -11,10 +11,10 @@ import SwiftUI
 /// three buttons that deploy six hosts was one mis-tap from a surprise. It
 /// lives behind the profile button in the corner, where every other app puts it.
 struct HomeView: View {
+    @Environment(\.openURL) private var openURL
     @Environment(AppState.self) private var state
     @Environment(Session.self) private var session
     @Environment(\.palette) private var palette
-    @Environment(\.openURL) private var openURL
 
     @State private var isShowingProfile = false
 
@@ -70,7 +70,7 @@ struct HomeView: View {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 9) {
                     StatusDot(
-                        colour: palette.color(for: state.snapshot.glyph),
+                        colour: state.snapshot.lastRefreshedAt == nil ? palette.textTertiary : palette.color(for: state.snapshot.glyph),
                         size: 9,
                         isPulsing: state.snapshot.hasActiveRun
                     )
@@ -89,21 +89,28 @@ struct HomeView: View {
                     .font(Typeface.caption)
                     .foregroundStyle(palette.textSecondary)
 
-                if let error = state.snapshot.errorMessage {
-                    HStack(spacing: 6) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.system(size: 10))
-                        Text(error)
+                if let error = state.snapshot.errorMessage, state.actionFailure == nil {
+                    RequestFailure(message: error) { await state.refresh() }
+                }
+                if let error = state.actionFailure?.displayMessage {
+                    HStack(alignment: .top, spacing: 8) {
+                        Label(error, systemImage: "exclamationmark.triangle")
                             .font(Typeface.caption)
-                            .lineLimit(3)
+                            .foregroundStyle(palette.negative)
+                        Button("Dismiss") { state.clearActionFailure() }
+                            .font(Typeface.caption)
+                            .frame(minHeight: 44)
                     }
-                    .foregroundStyle(palette.negative)
                 }
             }
         }
     }
 
     private var headline: String {
+        guard state.snapshot.lastRefreshedAt != nil else {
+            return state.isRefreshing ? "Loading workflows…" : "Workflow status unavailable"
+        }
+        if state.snapshot.errorMessage != nil { return "Showing the last workflow status" }
         if let failing = state.snapshot.runRows.first(where: { $0.status == .failed }) {
             return "\(failing.workflow.displayName) failed"
         }
@@ -113,7 +120,8 @@ struct HomeView: View {
         if let waiting = state.snapshot.runRows.first(where: { $0.status == .awaitingApproval }) {
             return "\(waiting.workflow.displayName) awaiting approval"
         }
-        return "All workflows green"
+        if state.snapshot.runRows.allSatisfy({ $0.status == .succeeded }) { return "All workflows passed" }
+        return "No active workflows"
     }
 
     private var subheadline: String {
@@ -228,8 +236,6 @@ private struct WorkflowCard: View {
                 }
             }
         }
-        .contentShape(.rect)
-        .onTapGesture { openURL(row.run?.url ?? state.repository.actionsURL) }
     }
 
     private var header: some View {
@@ -240,14 +246,19 @@ private struct WorkflowCard: View {
                 isPulsing: row.status.isActive
             )
 
-            VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 8) {
+            Link(destination: row.run?.url ?? state.repository.actionsURL) {
+                VStack(alignment: .leading, spacing: 2) {
                 Text(row.workflow.displayName)
                     .font(Typeface.body)
                     .foregroundStyle(palette.textPrimary)
                 Text(row.subtitle())
                     .font(Typeface.caption)
                     .foregroundStyle(palette.textSecondary)
-                    .lineLimit(1)
+            }
+
+                }
+                .frame(minHeight: 44)
             }
 
             Spacer(minLength: 8)
@@ -284,12 +295,13 @@ private struct WorkflowCard: View {
                 .frame(width: 30, height: 30)
                 .tint(palette.textSecondary)
         } else if state.canCancel(row.workflow) {
-            IconButton(symbol: "stop.fill", tint: palette.negative) {
+            IconButton(symbol: "stop.fill", label: "Cancel \(row.workflow.displayName) run", tint: palette.negative) {
                 Task { await state.cancel(row.workflow) }
             }
         } else {
             IconButton(
                 symbol: "play.fill",
+                label: "Run \(row.workflow.displayName)",
                 tint: palette.accent,
                 isEnabled: state.canTrigger(row.workflow)
             ) {
@@ -325,7 +337,8 @@ private struct ActivityTimeline: View {
     }
 
     private func row(_ entry: ActivityHistory.TimelineEntry) -> some View {
-        HStack(spacing: 10) {
+        Link(destination: entry.run.url) {
+            HStack(spacing: 10) {
             StatusDot(colour: palette.color(for: entry.run.status), size: 6)
 
             Text(entry.workflow.displayName)
@@ -340,21 +353,20 @@ private struct ActivityTimeline: View {
 
             if let duration = entry.run.duration(now: Date()), !entry.run.status.isOpen {
                 Text(RelativeTime.duration(duration))
-                    .font(.system(size: 11, weight: .medium).monospacedDigit())
+                    .font(Typeface.footnote.monospacedDigit())
                     .foregroundStyle(palette.textTertiary)
             }
 
             if let started = entry.run.startedAt {
                 Text(RelativeTime.ago(started))
-                    .font(.system(size: 11, weight: .medium).monospacedDigit())
+                    .font(Typeface.footnote.monospacedDigit())
                     .foregroundStyle(palette.textTertiary)
-                    .frame(width: 58, alignment: .trailing)
             }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 9)
-        .contentShape(.rect)
-        .onTapGesture { openURL(entry.run.url) }
+        .frame(minHeight: 44)
+        }
     }
 }
 
@@ -386,6 +398,7 @@ struct ProfileButton: View {
                 }
             }
             .frame(width: 28, height: 28)
+            .frame(width: 44, height: 44)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Account")

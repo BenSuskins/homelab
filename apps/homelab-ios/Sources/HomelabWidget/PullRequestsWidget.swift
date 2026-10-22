@@ -8,7 +8,7 @@ import WidgetKit
 struct HomelabPullRequestsWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "HomelabPullRequests", provider: PullRequestProvider()) { entry in
-            WidgetSurface { PullRequestWidgetView(entry: entry) }
+            WidgetSurface(route: "pull-requests") { PullRequestWidgetView(entry: entry) }
         }
         .configurationDisplayName("Pull requests")
         .description("Open pull requests, and how many are ready to merge.")
@@ -25,20 +25,22 @@ struct PullRequestEntry: TimelineEntry {
     let date: Date
     let pullRequests: [PullRequestSummary]
     let isStale: Bool
+    let refreshedAt: Date?
 
     var mergeable: [PullRequestSummary] { pullRequests.filter(\.canMerge) }
 }
 
 struct PullRequestProvider: TimelineProvider {
     func placeholder(in context: Context) -> PullRequestEntry {
-        PullRequestEntry(date: Date(), pullRequests: [], isStale: false)
+        PullRequestEntry(date: Date(), pullRequests: [], isStale: true, refreshedAt: nil)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (PullRequestEntry) -> Void) {
         completion(PullRequestEntry(
-            date: Date(),
+            date: WidgetData.snapshotCache.load()?.lastRefreshedAt ?? Date(),
             pullRequests: WidgetData.snapshotCache.load()?.pullRequests ?? [],
-            isStale: false
+            isStale: WidgetData.snapshotCache.load()?.lastRefreshedAt == nil,
+            refreshedAt: WidgetData.snapshotCache.load()?.lastRefreshedAt
         ))
     }
 
@@ -66,7 +68,8 @@ struct PullRequestProvider: TimelineProvider {
         return PullRequestEntry(
             date: Date(),
             pullRequests: fetched?.pullRequests ?? cached?.pullRequests ?? [],
-            isStale: fetched == nil
+            isStale: fetched == nil,
+            refreshedAt: (fetched ?? cached)?.lastRefreshedAt
         )
     }
 }
@@ -96,13 +99,17 @@ struct PullRequestWidgetView: View {
 
     private var small: some View {
         VStack(alignment: .leading, spacing: 6) {
-            WidgetHeader(title: "Pull requests", tint: tint, isStale: entry.isStale)
+            WidgetHeader(title: "Pull requests", tint: tint, isStale: entry.isStale, refreshedAt: entry.refreshedAt)
 
-            Text("\(entry.pullRequests.count)")
-                .font(.system(size: 28, weight: .semibold).monospacedDigit())
-                .foregroundStyle(palette.textPrimary)
+            if entry.refreshedAt == nil {
+                Text("No GitHub reading").font(.body).foregroundStyle(palette.textSecondary)
+            } else {
+                Text("\(entry.pullRequests.count)")
+                    .font(.system(size: 28, weight: .semibold).monospacedDigit())
+                    .foregroundStyle(palette.textPrimary)
+            }
 
-            Text(entry.pullRequests.isEmpty ? "none open" : "\(entry.mergeable.count) ready")
+            Text(entry.refreshedAt == nil ? "" : (entry.pullRequests.isEmpty ? "none open" : "\(entry.mergeable.count) ready"))
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(entry.mergeable.isEmpty ? palette.textSecondary : palette.accent)
 
@@ -120,14 +127,21 @@ struct PullRequestWidgetView: View {
     private var medium: some View {
         VStack(alignment: .leading, spacing: 7) {
             WidgetHeader(
-                title: entry.pullRequests.isEmpty
+                title: entry.refreshedAt == nil ? "Pull requests unavailable" : (entry.pullRequests.isEmpty
                     ? "No open pull requests"
-                    : "\(entry.pullRequests.count) open · \(entry.mergeable.count) ready",
-                tint: tint,
-                isStale: entry.isStale
+                    : "\(entry.pullRequests.count) open · \(entry.mergeable.count) ready"),
+                tint: entry.refreshedAt == nil ? palette.textSecondary : tint,
+                isStale: entry.isStale,
+                refreshedAt: entry.refreshedAt
             )
 
-            if entry.pullRequests.isEmpty {
+            if entry.refreshedAt == nil {
+                Spacer(minLength: 0)
+                Text("Waiting for GitHub")
+                    .font(.subheadline)
+                    .foregroundStyle(palette.textSecondary)
+                Spacer(minLength: 0)
+            } else if entry.pullRequests.isEmpty {
                 Spacer(minLength: 0)
                 Text("Renovate will be along shortly.")
                     .font(.system(size: 12))
@@ -185,7 +199,8 @@ struct PullRequestWidgetView: View {
     }
 
     private var inlineText: String {
-        entry.pullRequests.isEmpty
+        guard entry.refreshedAt != nil else { return "Pull requests · status unknown" }
+        return entry.pullRequests.isEmpty
             ? "No open pull requests"
             : "\(entry.pullRequests.count) open · \(entry.mergeable.count) ready"
     }

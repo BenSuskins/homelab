@@ -6,6 +6,7 @@ import SwiftUI
 /// list ever outgrows one screen.
 public struct SettingsView: View {
     @Environment(Session.self) private var session
+    @State private var isConfirmingSignOut = false
 
     public init() {}
 
@@ -28,16 +29,29 @@ public struct SettingsView: View {
     private var account: some View {
         if session.isSignedIn {
             VStack(alignment: .leading, spacing: 6) {
+                Text(session.viewer?.displayName ?? session.viewer.map { "@\($0.login)" } ?? "Signed in with GitHub")
+                    .font(.headline)
+                Text(RepositoryReference.homelab.slug + " · main")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 Text("Signed in with a GitHub device-flow token.")
                 Text("Stored in your Keychain. Revoke it from GitHub → Settings → Applications.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
-                Button("Sign out") {
-                    Task { await session.signOut() }
+                Button("Sign out", role: .destructive) {
+                    isConfirmingSignOut = true
                 }
                 .controlSize(.small)
+                .confirmationDialog("Sign out of GitHub?", isPresented: $isConfirmingSignOut) {
+                    Button("Sign out", role: .destructive) {
+                        Task { await session.signOut() }
+                    }
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text("This removes the GitHub token from the Keychain.")
+                }
             }
         } else {
             Text("Not signed in. Open the menu to sign in.")

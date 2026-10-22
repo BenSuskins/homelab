@@ -123,17 +123,20 @@ struct UncheckedSendable<Value>: @unchecked Sendable {
 /// Wraps a widget's content in the palette and the container background, so
 /// every widget picks up the same appearance with one line.
 struct WidgetSurface<Content: View>: View {
+    let route: String
     @Environment(\.colorScheme) private var colorScheme
 
     private let content: Content
 
-    init(@ViewBuilder content: () -> Content) {
+    init(route: String = "home", @ViewBuilder content: () -> Content) {
+        self.route = route
         self.content = content()
     }
 
     var body: some View {
         content
             .homelabPalette(colorScheme)
+            .widgetURL(URL(string: "homelab://\(route)")!)
             .containerBackground(for: .widget) {
                 Palette.forScheme(colorScheme).canvas
             }
@@ -148,6 +151,7 @@ struct WidgetHeader: View {
     let title: String
     let tint: Color
     let isStale: Bool
+    var refreshedAt: Date? = nil
 
     var body: some View {
         HStack(spacing: 5) {
@@ -158,10 +162,16 @@ struct WidgetHeader: View {
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(palette.textSecondary)
             Spacer(minLength: 0)
+            if let refreshedAt {
+                Text(RelativeTime.ago(refreshedAt))
+                    .font(.system(size: 10))
+                    .foregroundStyle(palette.textTertiary)
+            }
             if isStale {
                 Image(systemName: "clock.arrow.circlepath")
                     .font(.system(size: 9))
-                    .foregroundStyle(palette.textTertiary)
+                    .foregroundStyle(palette.textSecondary)
+                    .accessibilityLabel("Cached data")
             }
         }
     }

@@ -87,3 +87,6 @@ apps/**/*.xcscmblueprint
 apps/**/*.xcresult
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,visualstudiocode,ansible,ssh
+
+# Keep the native app design rules in the repository.
+!/DESIGN.md
