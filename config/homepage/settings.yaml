@@ -72,7 +72,7 @@ layout:
     columns: 4
   Other:
     icon: mdi-code-json
-    tab: Other
+    tab: Homelab
     header: false
     style: row
     columns: 6
