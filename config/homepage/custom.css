@@ -3,7 +3,11 @@ body,
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
 }
 
-body {
+html,
+body,
+#__next,
+#page_wrapper,
+#inner_wrapper {
   background-color: #f7f1e7 !important;
   color: #343c31;
 }
@@ -19,8 +23,25 @@ h6,
   font-family: ui-rounded, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
 }
 
+.information-widget-greeting span {
+  font-family: ui-rounded, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  font-weight: 700;
+}
+
+.service-group-name {
+  color: #343c31 !important;
+  font-weight: 600;
+}
+
+.service-name {
+  color: #343c31 !important;
+  font-weight: 600;
+}
+
 .service-description {
+  color: #646357 !important;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  font-weight: 400;
 }
 
 .service-card {
@@ -34,7 +55,11 @@ h6,
   border-color: #3c654c;
 }
 
-.dark body {
+.dark,
+.dark body,
+.dark #__next,
+.dark #page_wrapper,
+.dark #inner_wrapper {
   background-color: #201f1a !important;
   color: #f7f0e2;
 }
@@ -42,8 +67,18 @@ h6,
 .dark .service-card {
   background-color: #2d3028 !important;
   border-color: #494a3e;
+  color: #f7f0e2 !important;
 }
 
 .dark .service-card:hover {
   border-color: #bad0ab;
+}
+
+.dark .service-group-name,
+.dark .service-name {
+  color: #f7f0e2 !important;
+}
+
+.dark .service-description {
+  color: #c3beaf !important;
 }
