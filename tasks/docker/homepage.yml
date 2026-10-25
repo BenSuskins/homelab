@@ -35,6 +35,13 @@
     owner: "{{ username }}"
     group: "{{ username }}"
 
+- name: HOMEPAGE - Create custom styles
+  ansible.builtin.copy:
+    src: ../config/homepage/custom.css
+    dest: "{{ base_dir }}/homepage/custom.css"
+    owner: "{{ username }}"
+    group: "{{ username }}"
+
 - name: HOMEPAGE - Create widgets
   ansible.builtin.copy:
     src: ../config/homepage/widgets.yaml

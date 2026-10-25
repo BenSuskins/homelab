@@ -4,16 +4,15 @@
 ###########################
 #        General          #
 ###########################
-title: Suskins Services
-headerStyle: underlined
+title: Suskins Household
+headerStyle: clean
 hideVersion: true
 useEqualHeights: true
 hideErrors: false
 target: _blank
-cardBlur: xl
+cardStyle: hairline
 iconStyle: theme
-color: slate
-theme: dark
+color: green
 bookmarksStyle: icons
 disableCollapse: true
 
