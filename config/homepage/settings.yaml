@@ -31,48 +31,39 @@ quicklaunch:
 layout:
   Developer:
     icon: mdi-code-json
-    tab: Homelab
     header: false
     style: row
     columns: 6
   Media:
     icon: mdi-play-pause
-    tab: Homelab
     style: row
     columns: 4
   Docker:
     icon: si-docker
-    tab: Homelab
     style: row
     columns: 4
   Monitoring:
     icon: mdi-chart-multiple
-    tab: Homelab
     style: row
     columns: 4
   Development:
     icon: mdi-code-json
-    tab: Homelab
     style: row
     columns: 4
   Games:
     icon: mdi-server
-    tab: Homelab
     style: row
     columns: 4
   General:
     icon: mdi-server
-    tab: Homelab
     style: row
     columns: 4
   AI:
     icon: mdi-server
-    tab: Homelab
     style: row
     columns: 4
   Other:
     icon: mdi-code-json
-    tab: Homelab
     header: false
     style: row
     columns: 6

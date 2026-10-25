@@ -29,7 +29,7 @@ h6,
 }
 
 .service-group-name {
-  color: #343c31 !important;
+  color: #646357 !important;
   font-weight: 600;
 }
 
@@ -77,6 +77,10 @@ h6,
 .dark .service-group-name,
 .dark .service-name {
   color: #f7f0e2 !important;
+}
+
+.dark .service-group-name {
+  color: #c3beaf !important;
 }
 
 .dark .service-description {
