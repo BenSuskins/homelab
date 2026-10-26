@@ -35,6 +35,7 @@ containers:
   # Apps
   - display
   - family-hub
+  - family-hub-web
   - pubgolf-backend
   - pubgolf-frontend
   - races-server
