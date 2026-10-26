@@ -24,7 +24,7 @@
       name: family-hub-web
       description: Family Hub wall display
       icon: homehub
-      host: "display.{{ domain }}"
+      host: "family-display.{{ domain }}"
       ip: "{{ inventory_hostname }}"
       friendly_name: "{{ friendly_name }}"
       port: 8086

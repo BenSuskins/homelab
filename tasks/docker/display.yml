@@ -38,11 +38,11 @@
 - name: DISPLAY - Define service entry
   ansible.builtin.set_fact:
     display_entry:
-      name: display-renderer
+      name: display
       description: E-ink panel render service
       # No dashboard-icons entry for this; fall back to Material Design.
       icon: mdi-monitor-dashboard
-      host: "display-renderer.{{ domain }}"
+      host: "display.{{ domain }}"
       ip: "{{ inventory_hostname }}"
       friendly_name: "{{ friendly_name }}"
       port: 8085
