@@ -34,6 +34,7 @@
     env:
       OIDC_ISSUER: "https://authelia.{{ domain }}"
       OIDC_REDIRECT_URL: "https://hub.{{ domain }}/auth/callback"
+      WEB_ORIGIN: "https://display.{{ domain }}"
       SESSION_SECRET: "{{ SESSION_SECRET }}"
       SESSION_ENCRYPTION_KEY: "{{ SESSION_ENCRYPTION_KEY }}"
       HUXLEY_ACCESS_TOKEN: "{{ HUB_HUXLEY_ACCESS_TOKEN }}"

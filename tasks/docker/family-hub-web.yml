@@ -1,0 +1,40 @@
+- name: FAMILY-HUB-WEB - Pre-pull image
+  community.docker.docker_image:
+    name: "{{ image }}"
+    source: pull
+    force_source: true
+  vars:
+    image: ghcr.io/bensuskins/family-hub-web:latest
+
+- name: FAMILY-HUB-WEB - Create container
+  community.docker.docker_container:
+    name: family-hub-web
+    image: ghcr.io/bensuskins/family-hub-web:latest
+    restart_policy: always
+    state: started
+    pull: false
+    networks:
+      - name: homelab
+    ports:
+      - "8086:3000"
+
+- name: FAMILY-HUB-WEB - Define service entry
+  ansible.builtin.set_fact:
+    family_hub_web_entry:
+      name: family-hub-web
+      description: Family Hub wall display
+      icon: homehub
+      host: "display.{{ domain }}"
+      ip: "{{ inventory_hostname }}"
+      friendly_name: "{{ friendly_name }}"
+      port: 8086
+      scheme: http
+      homepage: true
+      secured: false
+      healthcheck: true
+      healthcheck_path: "/display"
+      proxied: true
+
+- name: FAMILY-HUB-WEB - Append to docker_services
+  ansible.builtin.set_fact:
+    docker_services: "{{ docker_services + [family_hub_web_entry] }}"
