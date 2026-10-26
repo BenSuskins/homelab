@@ -13,12 +13,12 @@
     source: pull
     force_source: true
   vars:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
 
 - name: WEDDING-DB - Create container
   community.docker.docker_container:
     name: wedding-db
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     restart_policy: always
     state: started
     pull: false
