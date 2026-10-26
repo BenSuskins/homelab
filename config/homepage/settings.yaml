@@ -12,8 +12,7 @@ hideErrors: false
 target: _blank
 cardStyle: hairline
 iconStyle: theme
-color: green
-bookmarksStyle: icons
+color: stone
 disableCollapse: true
 
 ###########################

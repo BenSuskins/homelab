@@ -1,6 +1,6 @@
 body,
 * {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  font-family: ui-rounded, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
 }
 
 html,
@@ -9,7 +9,7 @@ body,
 #page_wrapper,
 #inner_wrapper {
   background-color: #f7f1e7 !important;
-  color: #343c31;
+  color: #343c31 !important;
 }
 
 h1,
@@ -30,7 +30,8 @@ h6,
 }
 
 .information-widget-datetime span {
-  color: #343c31 !important;
+  color: #777568 !important;
+  font-variant-numeric: tabular-nums;
 }
 
 .service-group-icon > div {
@@ -38,12 +39,13 @@ h6,
 }
 
 .bookmark-icon {
-  background-color: #f3e5d4 !important;
-  color: #8b503c !important;
+  background-color: #e6eddd !important;
+  border-right: 1px solid #e6dfd2;
+  color: #3c654c !important;
 }
 
 .service-group-name {
-  color: #646357 !important;
+  color: #777568 !important;
   font-weight: 600;
 }
 
@@ -53,8 +55,7 @@ h6,
 }
 
 .service-description {
-  color: #646357 !important;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  color: #777568 !important;
   font-weight: 400;
 }
 
@@ -69,48 +70,105 @@ h6,
   border-color: #3c654c;
 }
 
+.bookmark > a {
+  background: #fffcf6 !important;
+  border: 1px solid #e6dfd2;
+  border-radius: 0.875rem !important;
+  box-shadow: none !important;
+  color: #343c31 !important;
+}
+
+.bookmark > a:hover {
+  background: #fffcf6 !important;
+  border-color: #3c654c;
+}
+
+.bookmark-name {
+  color: #343c31 !important;
+  font-size: 0.875rem !important;
+  font-weight: 600;
+}
+
+.bookmark-description {
+  color: #777568 !important;
+}
+
+.bookmark > a:focus-visible,
+.service-card:focus-visible {
+  outline: 3px solid #b88642 !important;
+  outline-offset: 3px;
+}
+
 .dark,
 .dark body,
 .dark #__next,
 .dark #page_wrapper,
 .dark #inner_wrapper {
-  background-color: #201f1a !important;
-  color: #f7f0e2;
+  background-color: #1e241e !important;
+  color: #eee9dc !important;
 }
 
 .dark .service-card {
-  background-color: #2d3028 !important;
-  border-color: #494a3e;
-  color: #f7f0e2 !important;
+  background-color: #292f28 !important;
+  border-color: #41483d;
+  color: #eee9dc !important;
 }
 
 .dark .service-card:hover {
-  border-color: #bad0ab;
+  border-color: #a6c49b;
 }
 
-.dark .information-widget-greeting span,
+.dark .information-widget-greeting span {
+  color: #eee9dc !important;
+}
+
 .dark .information-widget-datetime span {
-  color: #f7f0e2 !important;
+  color: #b1ae9f !important;
 }
 
 .dark .service-group-icon > div {
-  background: #e0baa0 !important;
+  background: #d59a7e !important;
 }
 
 .dark .bookmark-icon {
-  background-color: #473c2d !important;
-  color: #e0baa0 !important;
+  background-color: #343d32 !important;
+  border-right-color: #41483d;
+  color: #a6c49b !important;
 }
 
 .dark .service-group-name,
 .dark .service-name {
-  color: #f7f0e2 !important;
+  color: #eee9dc !important;
 }
 
 .dark .service-group-name {
-  color: #c3beaf !important;
+  color: #b1ae9f !important;
 }
 
 .dark .service-description {
-  color: #c3beaf !important;
+  color: #b1ae9f !important;
+}
+
+.dark .bookmark > a {
+  background: #292f28 !important;
+  border-color: #41483d;
+  color: #eee9dc !important;
+}
+
+.dark .bookmark > a:hover {
+  background: #292f28 !important;
+  border-color: #a6c49b;
+}
+
+.dark .bookmark-name {
+  color: #eee9dc !important;
+}
+
+.dark .bookmark-description {
+  color: #b1ae9f !important;
+}
+
+.dark .bookmark > a:focus-visible,
+.dark .service-card:focus-visible {
+  outline-color: #d7b36f !important;
 }

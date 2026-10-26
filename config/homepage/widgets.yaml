@@ -18,12 +18,3 @@
 - greeting:
     text_size: xl
     text: Suskins Household
-
-###########################
-#        Search           #
-###########################
-- search:
-    provider: google
-    focus: false
-    showSearchSuggestions: true
-    target: _blank
