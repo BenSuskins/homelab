@@ -39,7 +39,7 @@ containers:
   - pubgolf-backend
   - pubgolf-frontend
   - races-server
-  - house
+  # - house
   - wedding-db
   - wedding
   - trek
