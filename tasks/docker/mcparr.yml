@@ -1,0 +1,43 @@
+---
+- name: MCPARR - Pre-pull image
+  community.docker.docker_image:
+    name: "{{ image }}"
+    source: pull
+    force_source: true
+  vars:
+    image: ghcr.io/ondrejmirtes/mcparr:latest
+
+- name: MCPARR - Create container
+  community.docker.docker_container:
+    name: mcparr
+    image: ghcr.io/ondrejmirtes/mcparr:latest
+    restart_policy: always
+    state: started
+    pull: false
+    networks:
+      - name: homelab
+    ports:
+      - "3200:3000"
+    env:
+      SONARR_URL: "http://{{ mediaserver_ip }}:8989"
+      SONARR_API_KEY: "{{ SONARR_API_KEY }}"
+      RADARR_URL: "http://{{ mediaserver_ip }}:7878"
+      RADARR_API_KEY: "{{ RADARR_API_KEY }}"
+      MCPARR_AUTH_TOKEN: "{{ MEDIA_SERVER_MCP_AUTH_TOKEN }}"
+      TZ: Europe/London
+
+- name: MCPARR - Define service entry
+  ansible.builtin.set_fact:
+    mcparr_entry:
+      name: mcparr
+      description: Sonarr and Radarr MCP
+      ip: "{{ inventory_hostname }}"
+      friendly_name: "{{ friendly_name }}"
+      port: 3200
+      scheme: http
+      healthcheck: true
+      healthcheck_path: /health
+
+- name: MCPARR - Append to docker_services
+  ansible.builtin.set_fact:
+    docker_services: "{{ docker_services + [mcparr_entry] }}"

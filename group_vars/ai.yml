@@ -4,7 +4,7 @@ base_dir: /home/ai/server-ai
 containers:
   # MCP
   - mcpjungle
-  #- media-server-mcp
+  - mcparr
   # Work
   - workboard
   - workboard-mcp
