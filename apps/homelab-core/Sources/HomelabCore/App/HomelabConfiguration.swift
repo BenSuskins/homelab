@@ -6,9 +6,8 @@ import Foundation
 public struct HomelabConfiguration: Sendable {
     /// The OAuth app's client ID.
     ///
-    /// Public by design. Device flow has no client secret — that is the reason
-    /// it was chosen (ADR-0004) — so this is not a credential, and committing
-    /// it is deliberate rather than an oversight.
+    /// Public by design. Device flow has no client secret, so this is not a
+    /// credential and committing it is deliberate rather than an oversight.
     ///
     /// Registered at https://github.com/settings/developers as an **OAuth app**
     /// (not a GitHub App, which needs a private key and a server to exchange

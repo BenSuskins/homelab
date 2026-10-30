@@ -30,7 +30,7 @@ Terraform has separate roots in `terraform/cloudflare/`, `terraform/proxmox/`, a
 
 ## Grafana
 
-Read `docs/grafana-dashboard-style.md` before editing dashboards. Dashboards live in `config/grafana/dashboards/<Folder>/<uid>.json`; the filename must match the dashboard UID. `traefik.json` and `truenas.json` are hand-maintained. Follow `docs/adr/0001-host-label-canonical-for-dashboards.md`: use the `host` label, not `instance`, and do not use `up` as a host-liveness check.
+Read `docs/grafana-dashboard-style.md` before editing dashboards. Dashboards live in `config/grafana/dashboards/<Folder>/<uid>.json`; the filename must match the dashboard UID. `traefik.json` and `truenas.json` are hand-maintained. Use the `host` label, not `instance`, and do not use `up` as a host-liveness check.
 
 Alert rules and mute times live in `config/grafana/provisioning/alerting/`. Contact points and notification policies are templated under `config/grafana/templates/` because they include the Discord webhook. Preserve `{% raw %}` around Grafana template expressions.
 
@@ -41,7 +41,7 @@ Alert rules and mute times live in `config/grafana/provisioning/alerting/`. Cont
 - `apps/homelab-ios/` contains the iOS app and widgets. `Homelab.xcodeproj` is committed and is the Xcode Cloud source of truth. Add new source files to both the project group and the target's sources build phase.
 - `GitHubTransport` is the seam for GitHub access. Keep `openPullRequests()` on GraphQL because the REST list endpoint omits mergeability.
 - Build Loki and Prometheus query strings with `QueryEncoding`; `URLComponents.queryItems` leaves `+` unescaped for Go query parsing.
-- Keep `paths-ignore: ['apps/**']` in `update.yml` and `build-mcp-arr.yml`. `apps.yml` is the Swift workflow and requires a GitHub-hosted macOS runner.
+- Keep `paths-ignore: ['apps/**']` in `update.yml` so app-only changes do not deploy infrastructure. `apps.yml` is the Swift workflow and requires a GitHub-hosted macOS runner.
 
 From `apps/homelab-menubar/`, `make test` runs both package test suites. Other supported commands include `make bundle`, `make install`, `make ios-generate`, and `make ios-build`.
 
@@ -51,4 +51,4 @@ For Ansible, Terraform, and other infrastructure changes, verify with the releva
 
 For Swift changes, use the package or Xcode command for the affected target. Do not claim that a build or workflow proves installed-device behavior. Do not trigger deployment or production infrastructure changes unless requested.
 
-The `update.yml` workflow runs Ansible against hosts on pushes to `main`; `build-mcp-arr.yml` also runs on pushes. Keep workflow path filters intact when changing app-only code.
+The `update.yml` workflow runs Ansible against hosts on pushes to `main`, excluding app-only changes. Keep its path filter intact when changing app-only code.

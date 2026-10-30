@@ -158,7 +158,7 @@ struct DeviceFlowTests {
     @Test("asks for the scopes the app actually needs and no others")
     func requestsMinimumViableScope() {
         // Device flow can only issue classic scopes, so this string is the
-        // whole of the grant's blast radius — see ADR-0004.
+        // whole of the grant's blast radius.
         #expect(DeviceFlow.scope == "repo workflow")
     }
 

@@ -31,7 +31,7 @@ struct HomelabApp: App {
             ),
             cache: SnapshotCache(appGroup: appGroup),
             // No notifier: a suspended iOS app never sees the failure, so the
-            // widgets are the ambient signal instead. See ADR-0005.
+            // widgets are the ambient signal instead.
             writeAuthorisation: BiometricWriteAuthorisation(),
             // The health widget cannot reach Prometheus unless the phone
             // happens to be on the tailnet when iOS decides to refresh it, so
@@ -50,7 +50,7 @@ struct HomelabApp: App {
                 .onChange(of: scenePhase) { _, phase in
                     // The polling loop only runs while foregrounded, because
                     // iOS suspends the process seconds after backgrounding
-                    // whatever we intend (ADR-0005).
+                    // whatever we intend.
                     switch phase {
                     case .active:
                         // Coming back from Safari with the code typed in is the

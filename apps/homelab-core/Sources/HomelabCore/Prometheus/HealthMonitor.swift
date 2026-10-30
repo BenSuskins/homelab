@@ -89,9 +89,8 @@ public final class HealthMonitor {
         }
     }
 
-    /// Gatus exports one series per endpoint; `CONTEXT.md` flags this metric as
-    /// load-bearing for the `gatus-endpoint-down` alert rule, which is a good
-    /// reason to read the same thing the alerting reads.
+    /// Gatus exports one series per endpoint. Read the same metric as the
+    /// `gatus-endpoint-down` alert rule.
     private func fetchServices() async throws(PrometheusFailure) -> [ServiceHealth] {
         let samples = try await client.instantQuery(HealthQuery.serviceSuccess)
         return Self.services(from: samples)
@@ -152,7 +151,7 @@ public final class HealthMonitor {
 
     /// Host rows from three instant queries. Superseded on screen by
     /// `HealthHistory.currentHosts`, and kept because it is the pure statement
-    /// of the rule ADR-0001 sets — a host is whatever carries a Host Label, a
+    /// of the host-label rule — a host is whatever carries a Host Label, a
     /// NaN is missing data rather than a reading of zero — and the tests that
     /// pin that rule down are cheaper to run against it than against a range
     /// query's wire format.

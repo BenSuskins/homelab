@@ -3,8 +3,6 @@
 Status: adopted on 22 October 2026.
 
 This document defines the design rules for the iOS app, its widgets, and the macOS menu bar app.
-The [audit](docs/design-audit/native-apps/AUDIT.md) records source findings and implementation status.
-The [HTML mockup](docs/design-audit/native-apps/index.html) records the visual proposal with sample data.
 
 ## Purpose
 
@@ -249,6 +247,6 @@ Record native device checks separately from HTML checks and compile checks.
 - [Apple materials guidance](https://developer.apple.com/design/human-interface-guidelines/materials): Liquid Glass for the functional layer above content.
 - [Apple SwiftUI design session](https://developer.apple.com/videos/play/wwdc2025/323/): native floating tab bars and navigation.
 - [UI/UX Pro Max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill): interaction, accessibility, state clarity, and native controls.
-- Existing source, [app README](apps/homelab-ios/README.md), and [token decision](docs/adr/0004-the-ios-app-holds-a-token.md).
+- Existing source and the [app README](apps/homelab-ios/README.md).
 
 The skills guide the review. Product needs and native platform behavior control the final design.

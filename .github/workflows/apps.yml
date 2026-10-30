@@ -1,8 +1,7 @@
 name: Apps
 
-# The mirror image of the `paths-ignore: ['apps/**']` blocks on `update.yml`
-# and `build-mcp-arr.yml` (see ADR-0003). Those stop Swift commits deploying
-# Ansible to six hosts; this is the half that actually checks the Swift.
+# The mirror image of the `paths-ignore: ['apps/**']` block on `update.yml`
+# (see ADR-0003). It checks Swift changes without deploying Ansible to six hosts.
 #
 # It cannot run on the `self-hosted` runner, which is Linux.
 on:

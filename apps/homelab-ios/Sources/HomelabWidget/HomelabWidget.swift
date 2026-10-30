@@ -5,7 +5,7 @@ import WidgetKit
 /// The iOS answer to the menu bar glyph: things you read without opening
 /// anything. Explicitly *not* an alerting mechanism — iOS treats a refresh
 /// interval as a hint and may honour it hours late, so these show what was true
-/// the last time the system let them look. See ADR-0005.
+/// the last time the system let them look.
 ///
 /// There are three of them because one was not enough: runs answer "did my
 /// deploy work", health answers "is anything down", and pull requests answer
@@ -32,7 +32,7 @@ enum WidgetData {
     }
 
     /// How long until the system is next asked to refresh. A request, not a
-    /// promise — see ADR-0005.
+    /// promise.
     static func nextRefresh(active: Bool) -> Date {
         // A run in flight changes minute to minute; an idle homelab does not.
         Date().addingTimeInterval(active ? 5 * 60 : 15 * 60)

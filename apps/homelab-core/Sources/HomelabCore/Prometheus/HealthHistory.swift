@@ -4,7 +4,7 @@ import Foundation
 ///
 /// They are written against the Host Label and never `instance`, and they never
 /// use `up` for liveness — host metrics are Remote-Written by Alloy and produce
-/// no `up` series at all (ADR-0001). Keeping them here rather than inline in
+/// no `up` series at all. Keeping them here rather than inline in
 /// the monitor means the instant tiles and the charts are provably reading the
 /// same thing.
 public enum HealthQuery {
@@ -22,9 +22,8 @@ public enum HealthQuery {
 
     public static let load1 = "node_load1"
 
-    /// Gatus exports one series per endpoint; `CONTEXT.md` flags this metric as
-    /// load-bearing for the `gatus-endpoint-down` alert, which is a good reason
-    /// to read what the alerting reads.
+    /// Gatus exports one series per endpoint. Keep this metric aligned with the
+    /// `gatus-endpoint-down` alert rule.
     public static let serviceSuccess = "gatus_results_endpoint_success"
 
     /// How many endpoints were failing at each moment — the one line that says

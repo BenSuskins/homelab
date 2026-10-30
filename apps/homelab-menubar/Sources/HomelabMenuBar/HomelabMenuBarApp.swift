@@ -4,8 +4,8 @@ import SwiftUI
 
 @main
 struct HomelabMenuBarApp: App {
-    /// One sign-in path with iOS, per the amendment to ADR-0004. `gh` used to
-    /// be this app's whole credential story; it now holds an OAuth token like
+    /// One sign-in path with iOS. `gh` used to be this app's whole credential
+    /// story; it now holds an OAuth token like
     /// the phone does, which is what removed the two-transport split — and the
     /// `PATH`-hunting that a GUI app needed to find `gh` at all.
     @State private var session = Session(

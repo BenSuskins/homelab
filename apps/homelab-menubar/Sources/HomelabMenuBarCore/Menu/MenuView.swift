@@ -1,9 +1,9 @@
 import HomelabCore
 import SwiftUI
 
-/// Switches on whether there is a token. Since ADR-0004 was amended this app
-/// holds one of its own, so "signed out" is a state the menu has to render —
-/// it never was while `gh` carried the credential.
+/// Switches on whether there is a token. This app now holds its own token, so
+/// "signed out" is a state the menu has to render — it never was while `gh`
+/// carried the credential.
 public struct MenuView: View {
     @Environment(Session.self) private var session
 

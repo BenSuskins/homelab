@@ -5,9 +5,9 @@ import Observation
 /// there is a token, so no view below the root has to cope with a client that
 /// cannot authenticate.
 ///
-/// Shared by both apps since ADR-0004 was amended: macOS stopped shelling out
-/// to `gh` and now holds a token of its own, so there is one sign-in path
-/// rather than two credential stories.
+/// Shared by both apps: macOS stopped shelling out to `gh` and now holds a
+/// token of its own, so there is one sign-in path rather than two credential
+/// stories.
 @MainActor
 @Observable
 public final class Session {
