@@ -127,13 +127,13 @@ that TestFlight deployment goes through **Xcode Cloud**, which discovers the
 project by scanning the repository — a generated one is not there to be found
 when you set the workflow up. `project.yml` seeded the committed project and was then deleted.
 
-Add `.github/workflows/apps.yml` on `paths: ['apps/**']`, `runs-on: macos-15` —
-the mirror image of the `paths-ignore` blocks ADR-0003 describes. Nothing builds
-or tests the Swift code in CI today, and a second app is where that stops being
-tolerable. The `self-hosted` runner is Linux and cannot build iOS.
+`.github/workflows/apps.yml` checks app changes on GitHub-hosted macOS runners.
+It mirrors the `paths-ignore` rule in ADR-0003, which keeps app-only changes
+from running Ansible against the homelab. The self-hosted runner is Linux and
+cannot build iOS.
 
-No change is needed to `update.yml` or `build-mcp-arr.yml`: their
-`paths-ignore: ['apps/**']` already covers the two new directories.
+No change is needed to `update.yml`: its `paths-ignore: ['apps/**']` already
+covers the two new directories.
 
 ### Phase 3 — device-flow auth
 

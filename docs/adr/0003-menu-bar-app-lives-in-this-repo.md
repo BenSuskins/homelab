@@ -13,12 +13,11 @@ its `DispatchableWorkflow` enum is literally a list of files in
 boundary where nothing can enforce it.
 
 **The cost is a coupling that is invisible from the app's side and destructive
-if forgotten.** `update.yml` and `build-mcp-arr.yml` both trigger on every push
-to `main` with no path filter. Without `paths-ignore: ['apps/**']` on both, a
-commit that only touches Swift source runs Ansible against all six hosts and
-rebuilds the MCP images. Those two `paths-ignore` blocks are load-bearing:
-deleting one looks like tidying and behaves like an accidental deploy on every
-future app commit.
+if forgotten.** `update.yml` triggers on every push to `main`. Without
+`paths-ignore: ['apps/**']`, a commit that only touches Swift source runs
+Ansible against all six hosts. This path filter is load-bearing: deleting it
+looks like tidying and behaves like an accidental deploy on every future app
+commit.
 
 Adopting the app also forced two unrelated fixes, because a menu bar button
 makes dispatching cheap enough to do twice by accident. `clean.yml` and
@@ -44,11 +43,9 @@ unchanged and applies to all three: they are control surfaces for this
 repository's CI/CD, and the iOS app's copy of `DispatchableWorkflow` is the same
 list of files in `.github/workflows/`.
 
-The `paths-ignore: ['apps/**']` blocks are unchanged in kind and wider in blast
-radius. The glob already covers the new directories, so nothing needs editing —
-but there are now three ways to write a Swift-only commit that would deploy to
-six hosts if either block were removed, and the trap has become correspondingly
-easier to spring.
+The `paths-ignore: ['apps/**']` rule is unchanged and covers the new
+directories. A Swift-only commit would deploy to six hosts if this one rule
+were removed, so it remains load-bearing.
 
 The scope adds the missing half of that pair: `.github/workflows/apps.yml`,
 triggered on `paths: ['apps/**']`, which builds and tests the Swift. Nothing in

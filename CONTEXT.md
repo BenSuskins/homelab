@@ -86,7 +86,7 @@ _Avoid_: VPN gateway, relay
 ### Apps
 
 **Dispatchable Workflow**:
-One of the three workflows the menu bar app is allowed to start on demand — `update.yml`, `terraform.yml`, `clean.yml`. The repository holds other workflows (`build-mcp-arr.yml`); a workflow is Dispatchable only if starting it by hand is a thing you'd deliberately do. Distinct from merely carrying a `workflow_dispatch` trigger.
+One of the three workflows the menu bar app is allowed to start on demand — `update.yml`, `terraform.yml`, `clean.yml`. The repository holds other workflows (`apps.yml`); a workflow is Dispatchable only if starting it by hand is a thing you'd deliberately do. Distinct from merely carrying a `workflow_dispatch` trigger.
 _Avoid_: job, action, pipeline
 
 **Run Row**:
