@@ -16,6 +16,50 @@
   vars:
     image: mcpjungle/mcpjungle:latest
 
+- name: MCPJUNGLE - Inspect existing container
+  community.docker.docker_container_info:
+    name: mcpjungle
+  register: mcpjungle_existing_container
+
+- name: MCPJUNGLE - Check for persistent database
+  ansible.builtin.stat:
+    path: "{{ base_dir }}/mcpjungle/mcpjungle.db"
+  register: mcpjungle_persistent_database
+
+- name: MCPJUNGLE - Copy existing database to persistent storage
+  when:
+    - mcpjungle_existing_container.exists
+    - not mcpjungle_persistent_database.stat.exists
+  block:
+    - name: MCPJUNGLE - Stop existing container for a consistent database copy
+      ansible.builtin.command:
+        argv:
+          - docker
+          - stop
+          - mcpjungle
+      when: mcpjungle_existing_container.container.State.Running
+
+    - name: MCPJUNGLE - Copy database into persistent storage
+      ansible.builtin.command:
+        argv:
+          - docker
+          - cp
+          - mcpjungle:/mcpjungle.db
+          - "{{ base_dir }}/mcpjungle/mcpjungle.db"
+  rescue:
+    - name: MCPJUNGLE - Restart existing container after a failed database copy
+      ansible.builtin.command:
+        argv:
+          - docker
+          - start
+          - mcpjungle
+      when:
+        - mcpjungle_existing_container.container.State.Running
+
+    - name: MCPJUNGLE - Stop deployment after a failed database copy
+      ansible.builtin.fail:
+        msg: MCPJungle database migration failed; the existing database was not replaced.
+
 - name: MCPJUNGLE - Create container
   community.docker.docker_container:
     name: mcpjungle
@@ -27,6 +71,8 @@
       - name: homelab
     ports:
       - "8090:8080"
+    env:
+      SQLITE_DB_PATH: /data/mcpjungle.db
     volumes:
       - "{{ base_dir }}/mcpjungle:/data"
 
