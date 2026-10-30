@@ -120,12 +120,12 @@
     source: pull
     force_source: true
   vars:
-    image: grafana/grafana:13.2.4
+    image: grafana/grafana:13.3.0
 
 - name: GRAFANA - Create container
   community.docker.docker_container:
     name: grafana
-    image: grafana/grafana:13.2.4
+    image: grafana/grafana:13.3.0
     restart_policy: always
     state: started
     pull: false
