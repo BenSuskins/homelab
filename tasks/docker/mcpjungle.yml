@@ -31,12 +31,20 @@
     - mcpjungle_existing_container.exists
     - not mcpjungle_persistent_database.stat.exists
   block:
+    - name: MCPJUNGLE - Create temporary migration directory
+      ansible.builtin.tempfile:
+        path: "{{ base_dir }}/mcpjungle"
+        prefix: .migration-
+        state: directory
+      register: mcpjungle_migration_directory
+
     - name: MCPJUNGLE - Stop existing container for a consistent database copy
       ansible.builtin.command:
         argv:
           - docker
           - stop
           - mcpjungle
+      changed_when: true
       when: mcpjungle_existing_container.container.State.Running
 
     - name: MCPJUNGLE - Copy database into persistent storage
@@ -45,7 +53,35 @@
           - docker
           - cp
           - mcpjungle:/mcpjungle.db
+          - "{{ mcpjungle_migration_directory.path }}/mcpjungle.db"
+      changed_when: true
+
+    - name: MCPJUNGLE - Copy database write-ahead log
+      ansible.builtin.command:
+        argv:
+          - docker
+          - cp
+          - mcpjungle:/mcpjungle.db-wal
+          - "{{ mcpjungle_migration_directory.path }}/mcpjungle.db-wal"
+      changed_when: true
+
+    - name: MCPJUNGLE - Install write-ahead log before database
+      ansible.builtin.command:
+        argv:
+          - mv
+          - --
+          - "{{ mcpjungle_migration_directory.path }}/mcpjungle.db-wal"
+          - "{{ base_dir }}/mcpjungle/mcpjungle.db-wal"
+      changed_when: true
+
+    - name: MCPJUNGLE - Install database after its write-ahead log
+      ansible.builtin.command:
+        argv:
+          - mv
+          - --
+          - "{{ mcpjungle_migration_directory.path }}/mcpjungle.db"
           - "{{ base_dir }}/mcpjungle/mcpjungle.db"
+      changed_when: true
   rescue:
     - name: MCPJUNGLE - Restart existing container after a failed database copy
       ansible.builtin.command:
@@ -53,12 +89,19 @@
           - docker
           - start
           - mcpjungle
+      changed_when: true
       when:
         - mcpjungle_existing_container.container.State.Running
 
     - name: MCPJUNGLE - Stop deployment after a failed database copy
       ansible.builtin.fail:
         msg: MCPJungle database migration failed; the existing database was not replaced.
+  always:
+    - name: MCPJUNGLE - Remove temporary migration directory
+      ansible.builtin.file:
+        path: "{{ mcpjungle_migration_directory.path }}"
+        state: absent
+      when: mcpjungle_migration_directory is defined
 
 - name: MCPJUNGLE - Create container
   community.docker.docker_container:

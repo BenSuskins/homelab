@@ -3,9 +3,8 @@ import Foundation
 /// One monitored service, as Gatus sees it and Prometheus reports it.
 public struct ServiceHealth: Sendable, Equatable, Identifiable, Codable {
     public let name: String
-    /// The Host Label — the Friendly Name of the host, per ADR-0001. Never the
-    /// `instance` label, which holds a raw IP and exists for Prometheus's own
-    /// bookkeeping rather than for display.
+    /// The Host Label is the Friendly Name of the host. Never use `instance`,
+    /// which holds a raw IP for Prometheus's bookkeeping rather than display.
     public let host: String
     public let isUp: Bool
 

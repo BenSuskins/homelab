@@ -34,7 +34,7 @@ revokes.
 It used to require the [GitHub CLI](https://cli.github.com) and shell out to it,
 which meant hunting `PATH`, Nix, Homebrew and `/usr/local` by hand because a GUI
 app launched from Finder inherits none of your shell's environment. That went
-when ADR-0004 was amended and both apps moved onto one token.
+when both apps moved onto one OAuth token.
 
 **One rough edge:** `make bundle` ad-hoc signs, so every build has a different
 signature and macOS may treat it as a different app for Keychain purposes —
@@ -126,5 +126,4 @@ output. They use the token you signed in with, and skip when there isn't one.
   run is one line in the deploy log. Merging here deploys.
 - **This app holds a token now.** It used to hold none, which was its best
   property. Unifying on one auth path with iOS cost that and bought a single
-  sign-in flow, no `gh` dependency, and no `PATH` archaeology. See ADR-0004 and
-  its amendment.
+  sign-in flow, no `gh` dependency, and no `PATH` archaeology.

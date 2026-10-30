@@ -13,7 +13,7 @@ public protocol FailureNotifying: Sendable {
 ///
 /// The concrete notifier therefore lives in the macOS target, so this is not a
 /// convention the iOS app is trusted to remember — the type is not there to
-/// wire up. See ADR-0005.
+/// wire up.
 public struct SilentFailureNotifier: FailureNotifying {
     public init() {}
     public func requestAuthorization() async {}

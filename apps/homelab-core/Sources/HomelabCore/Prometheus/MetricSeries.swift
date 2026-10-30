@@ -19,8 +19,8 @@ public struct MetricPoint: Sendable, Equatable, Codable, Identifiable {
 ///
 /// The instant-query equivalent is `PrometheusSample`: same labels, one value
 /// instead of a line. Both keep the raw label dictionary rather than a decoded
-/// struct, because which labels matter differs per query and ADR-0001 has
-/// already settled the only one that identifies a host.
+/// struct, because which labels matter differs per query. The `host` label is
+/// the canonical identifier for a host.
 public struct MetricSeries: Sendable, Equatable, Identifiable {
     public let labels: [String: String]
     /// Oldest first, as Prometheus returns them, which is also the order a
@@ -33,7 +33,7 @@ public struct MetricSeries: Sendable, Equatable, Identifiable {
             .joined(separator: ",")
     }
 
-    /// The Host Label, per ADR-0001. Never `instance`.
+    /// The Host Label. Never `instance`.
     public var host: String? { labels["host"] }
 
     public subscript(label: String) -> String? { labels[label] }

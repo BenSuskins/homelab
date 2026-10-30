@@ -104,8 +104,8 @@ struct HealthSnapshotTests {
 
     @Test("drops samples with no Host Label rather than inventing one")
     func ignoresUnlabelledSamples() {
-        // ADR-0001: `host` is the only label that identifies a host. A series
-        // without one cannot be attributed, and `instance` is not a substitute.
+        // `host` is the only label that identifies a host. A series without
+        // one cannot be attributed, and `instance` is not a substitute.
         let hosts = HealthMonitor.combine(
             load: [PrometheusSample(labels: ["instance": "192.168.0.201:12345"], value: 9)],
             memory: [],

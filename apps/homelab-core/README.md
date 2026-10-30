@@ -60,12 +60,11 @@ protocols precisely so the platform-specific half can live in the app target:
 | `WriteAuthorising` | `AlwaysAuthorised` | `BiometricWriteAuthorisation` |
 | `FailureNotifying` | `FailureNotifier` | `SilentFailureNotifier` |
 
-`GitHubTransport` was the fourth, with `GhCommandTransport` on macOS. It is not
-any more: ADR-0004's amendment put both apps on `URLSessionTransport` and a
-device-flow token, so the protocol now has one production implementation and
-exists for the fake.
+`GitHubTransport` was the fourth, with `GhCommandTransport` on macOS. Both apps
+now use `URLSessionTransport` and a device-flow token, so the protocol has one
+production implementation and exists for the fake.
 
 `FailureNotifying` carries a deliberate asymmetry: the concrete
 `FailureNotifier` lives in the macOS target even though `UserNotifications`
-compiles on iOS, so the iOS app *cannot* wire up a notifier that would never
-fire. See ADR-0005.
+compiles on iOS. A backgrounded iOS app is suspended before its polling loop
+can detect failures, so its notifier would never fire.

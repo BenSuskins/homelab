@@ -55,7 +55,7 @@ any window or filter change that occurs during the request.
 1. **A GitHub OAuth app.** <https://github.com/settings/developers> → New OAuth
    App → tick **Enable Device Flow**. Put the client ID in
    `HomelabConfiguration.iOS`, in the shared package. There is no client secret
-   and no server: that is why device flow was chosen (ADR-0004). The sign-in
+   and no server: that is why device flow was chosen. The sign-in
    button stays disabled until you replace the placeholder.
 2. **An Apple Developer Programme membership**, for the App Group and a
    provisioning profile that lasts a year rather than a week.
@@ -83,8 +83,8 @@ compile is what there is to prove.
 ## How it differs from the macOS app
 
 The two share `HomelabCore` — domain types, `GitHubClient`, `StatusSnapshot`,
-`AppState`, `Session`, the polling schedule — and since ADR-0004's amendment
-they share the sign-in flow and the OAuth client too. Two things still differ:
+`AppState`, `Session`, the polling schedule — and they share the sign-in flow
+and the OAuth client too. Two things still differ:
 
 - **Writes are behind Face ID.** Trigger, cancel and merge all deploy. Reads are
   not gated — a status glance should not cost a prompt.
@@ -92,7 +92,7 @@ they share the sign-in flow and the OAuth client too. Two things still differ:
   seconds, so the polling loop stops and a local notification could only fire
   while you were already looking at the app. The widgets are the ambient signal
   instead, and they are *not* an alerting mechanism: iOS treats the refresh
-  interval as a hint and may honour it hours late. **ADR-0005.**
+  interval as a hint and may honour it hours late.
 
 ## The widgets
 
@@ -117,7 +117,7 @@ To let them fetch on their own, add a `keychain-access-groups` entitlement of
 `$(AppIdentifierPrefix)co.uk.suskins.Homelab` to both targets and set the
 literal team-prefixed value in `HomelabConfiguration.iOS.keychainAccessGroup`.
 Either way they stay ambient indicators, not alerts — iOS decides when a
-timeline actually refreshes (**ADR-0005**).
+timeline actually refreshes.
 
 Service health is the exception that cannot fetch at all most of the time:
 Prometheus is tailnet-only, so that widget is drawing what the app last read
@@ -136,9 +136,8 @@ disagreeing with the chart beside it impossible rather than merely unlikely.
 The window picker owns the Prometheus `step` and `rate()` interval for each
 span, so a 7-day chart is not sampled as if it were an hour.
 
-It obeys `docs/adr/0001-host-label-canonical-for-dashboards.md`: grouped by the
-Host Label, never `instance`, and never using `up` for liveness, because those
-series are Remote-Written by Alloy and produce no `up`.
+It groups by the Host Label, never `instance`, and never uses `up` for liveness,
+because those series are Remote-Written by Alloy and produce no `up`.
 
 GitHub and Prometheus are independent failure domains, so off the tailnet the
 Health and Logs tabs alone say "not connected" and the other two keep working.

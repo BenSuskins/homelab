@@ -9,7 +9,7 @@ import UserNotifications
 /// `UserNotifications` exists on iOS too. A backgrounded iOS app is suspended
 /// within seconds, so its polling loop stops and `FailureDetector` never sees
 /// the failure — keeping the type out of the shared package means the iOS app
-/// cannot wire up a notifier that would never fire. See ADR-0005.
+/// cannot wire up a notifier that would never fire.
 public struct FailureNotifier: FailureNotifying {
     public init() {}
 

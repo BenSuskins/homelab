@@ -30,7 +30,7 @@ Terraform has separate roots in `terraform/cloudflare/`, `terraform/proxmox/`, a
 
 ## Grafana
 
-Read `docs/grafana-dashboard-style.md` before editing dashboards. Dashboards live in `config/grafana/dashboards/<Folder>/<uid>.json`; the filename must match the dashboard UID. `traefik.json` and `truenas.json` are hand-maintained. Follow `docs/adr/0001-host-label-canonical-for-dashboards.md`: use the `host` label, not `instance`, and do not use `up` as a host-liveness check.
+Read `docs/grafana-dashboard-style.md` before editing dashboards. Dashboards live in `config/grafana/dashboards/<Folder>/<uid>.json`; the filename must match the dashboard UID. `traefik.json` and `truenas.json` are hand-maintained. Use the `host` label, not `instance`, and do not use `up` as a host-liveness check.
 
 Alert rules and mute times live in `config/grafana/provisioning/alerting/`. Contact points and notification policies are templated under `config/grafana/templates/` because they include the Discord webhook. Preserve `{% raw %}` around Grafana template expressions.
 

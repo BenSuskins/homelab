@@ -20,7 +20,7 @@ extension AppState {
     /// On iOS this runs only while the app is foregrounded — the scene phase
     /// drives `start()` and `stop()`, because a suspended app's loop is stopped
     /// by the system regardless of what we intend. That is why the widget, not
-    /// a notification, is the ambient signal there (ADR-0005).
+    /// a notification, is the ambient signal there.
     public func restartPolling() {
         pollingTask?.cancel()
         pollingTask = Task { [weak self] in

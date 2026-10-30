@@ -3,9 +3,8 @@ import HomelabCore
 import LocalAuthentication
 
 /// Face ID (or the passcode) in front of every write, and in front of nothing
-/// else. See ADR-0004: the macOS app could hold no credential at all, and this
-/// one has to, so the mitigation is that the credential cannot be *used* to
-/// deploy by whoever is holding the unlocked phone.
+/// else. The macOS app holds no credential, but this app must. Biometrics keep
+/// someone holding an unlocked phone from using it to deploy.
 ///
 /// `deviceOwnerAuthentication` rather than `...WithBiometrics` deliberately:
 /// falling back to the passcode keeps the app usable with a wet thumb or a

@@ -1,8 +1,7 @@
 import Foundation
 
 /// Talks to `api.github.com` directly with a bearer token. This is the iOS side
-/// of the seam — iOS cannot spawn `gh`, which is the whole reason the seam
-/// exists (see ADR-0004).
+/// of the seam — iOS cannot spawn `gh`, so both apps use this transport.
 public struct URLSessionTransport: GitHubTransport {
     private let session: URLSession
     private let tokens: any TokenProviding

@@ -8,8 +8,8 @@ import Testing
 /// thing a fake can never tell us. Strictly read-only: no dispatch, no cancel,
 /// no merge.
 ///
-/// They need a real token. Since ADR-0004 was amended these run against the
-/// same Keychain item the app signs into, so sign in once and they work; with
+/// They need a real token. These run against the same Keychain item the app
+/// signs into, so sign in once and they work; with
 /// no token they skip rather than fail, because CI has no Keychain to sign
 /// into and a red build there would say nothing about GitHub.
 ///

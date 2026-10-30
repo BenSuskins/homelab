@@ -223,9 +223,8 @@ written down here:
 
 ## 7. Template variables
 
-Per [ADR-0001](adr/0001-host-label-canonical-for-dashboards.md), the **Host
-Label** (`host`, holding a host's Friendly Name) is the only label a dashboard
-uses to identify a host.
+The **Host Label** (`host`, holding a host's Friendly Name) is the only label a
+dashboard uses to identify a host.
 
 - A host-scoped dashboard leads with a variable literally named **`host`**:
   `multi: true`, `includeAll: true`, `allValue: ".*"`.
@@ -238,12 +237,12 @@ uses to identify a host.
   filter things to nothing teaches you to ignore the picker row.
 
 **Gatus**: its `group` label holds the Friendly Name, so the variable is named
-`host` and queries write `group=~"$host"`. Same concept, and the ADR says the
-concept gets one name.
+`host` and queries write `group=~"$host"`.
 
 **Proxmox** is the deliberate exception. A PVE Node is a hypervisor and a Guest
 is a `qemu/NNN` id — neither is a Host Label, so Proxmox keeps `$node` and
-`$guest`. See the definitions in `CONTEXT.md`. Do not "fix" these into `$host`.
+`$guest`. A PVE node is a hypervisor; a guest is a `qemu/NNN` ID. Do not "fix"
+these into `$host`.
 
 ## 8. Naming
 

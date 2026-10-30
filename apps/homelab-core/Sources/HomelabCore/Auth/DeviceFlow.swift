@@ -55,9 +55,9 @@ public enum DeviceFlowFailure: Error, Equatable, Sendable {
 /// client secret and therefore no server of our own, and because the resulting
 /// grant is revocable from GitHub's own UI without touching the device.
 ///
-/// The scope is the honest cost, recorded in ADR-0004: device flow issues
-/// classic scopes only, so `repo workflow` reaches every repository on the
-/// account. Biometrics on writes are what offsets it.
+/// Device flow issues classic scopes only, so `repo workflow` reaches every
+/// repository on the account. Biometrics on writes reduce the risk of that
+/// broad access.
 public struct DeviceFlow: Sendable {
     public static let scope = "repo workflow"
 
