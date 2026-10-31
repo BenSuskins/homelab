@@ -24,7 +24,7 @@ resource "cloudflare_dns_record" "suskins_root" {
 
 # Proxied CNAMEs pointing at the apex. Add a subdomain by extending the set.
 resource "cloudflare_dns_record" "suskins_apex_cnames" {
-  for_each = toset(["authelia", "www"])
+  for_each = toset(["authelia", "hub", "wedding", "www"])
 
   zone_id = data.cloudflare_zone.suskins.zone_id
   name    = each.value
@@ -37,6 +37,16 @@ resource "cloudflare_dns_record" "suskins_apex_cnames" {
 moved {
   from = cloudflare_dns_record.authelia
   to   = cloudflare_dns_record.suskins_apex_cnames["authelia"]
+}
+
+moved {
+  from = cloudflare_dns_record.hub
+  to   = cloudflare_dns_record.suskins_apex_cnames["hub"]
+}
+
+moved {
+  from = cloudflare_dns_record.wedding
+  to   = cloudflare_dns_record.suskins_apex_cnames["wedding"]
 }
 
 moved {
