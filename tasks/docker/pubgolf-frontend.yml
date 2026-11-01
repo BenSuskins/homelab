@@ -5,12 +5,12 @@
     source: pull
     force_source: true
   vars:
-    image: ghcr.io/bensuskins/pubgolf-frontend:latest
+    image: ghcr.io/bensuskins/pubgolf-frontend:50041b9
 
 - name: PUBGOLF-FRONTEND - Create container
   community.docker.docker_container:
     name: pubgolf-frontend
-    image: ghcr.io/bensuskins/pubgolf-frontend:latest
+    image: ghcr.io/bensuskins/pubgolf-frontend:50041b9
     restart_policy: always
     state: started
     pull: false
@@ -20,6 +20,15 @@
       - "3003:3000"
     env:
       NEXT_PUBLIC_API_URL: "https://api.pubgolf.me"
+
+- name: PUBGOLF-FRONTEND - Wait for frontend health
+  ansible.builtin.uri:
+    url: http://127.0.0.1:3003/
+  register: pubgolf_frontend_health
+  until: pubgolf_frontend_health.status | default(0) == 200
+  retries: 20
+  delay: 3
+  when: not ansible_check_mode
 
 - name: PUBGOLF - Define service entry
   ansible.builtin.set_fact:

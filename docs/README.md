@@ -178,6 +178,10 @@ Linux clients need `tailscale up --accept-routes`; iOS, Android and macOS accept
 advertised routes by default. There is no `tailscale` binary on the host itself — use
 `docker exec tailscale tailscale status`.
 
+## Pub Golf release
+
+See [PUBGOLF-RELEASE.md](PUBGOLF-RELEASE.md) for the coordinated Go API and SSE frontend cutover.
+
 ## Architecture
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the system diagram, the unified
