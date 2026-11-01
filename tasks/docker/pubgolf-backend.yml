@@ -16,22 +16,22 @@
     source: pull
     force_source: true
   vars:
-    image: ghcr.io/bensuskins/pubgolf-backend:50041b95b3dd74c4b88a9dd8be830e763cdf393c
+    image: ghcr.io/bensuskins/pubgolf-backend:latest
 
-# Pull both release images before changing the API to avoid a partial cutover
-# when the matching frontend image is unavailable.
-- name: PUBGOLF-BACKEND - Pre-pull matching frontend image
+# Pull both images before changing the API so a frontend pull failure
+# does not leave only the backend updated.
+- name: PUBGOLF-BACKEND - Pre-pull frontend image
   community.docker.docker_image:
     name: "{{ image }}"
     source: pull
     force_source: true
   vars:
-    image: ghcr.io/bensuskins/pubgolf-frontend:50041b9
+    image: ghcr.io/bensuskins/pubgolf-frontend:latest
 
 - name: PUBGOLF-BACKEND - Create container
   community.docker.docker_container:
     name: pubgolf-backend
-    image: ghcr.io/bensuskins/pubgolf-backend:50041b95b3dd74c4b88a9dd8be830e763cdf393c
+    image: ghcr.io/bensuskins/pubgolf-backend:latest
     restart_policy: always
     state: started
     pull: false
@@ -45,18 +45,6 @@
       - "8080:8080"
     env:
       DATABASE_PATH: /data/pubgolf-go.db
-
-- name: PUBGOLF-BACKEND - Wait for Go API health before updating frontend
-  ansible.builtin.uri:
-    url: http://127.0.0.1:8080/actuator/health
-    return_content: true
-  register: pubgolf_backend_health
-  until:
-    - pubgolf_backend_health.status | default(0) == 200
-    - (pubgolf_backend_health.json | default({})).get('status') == 'UP'
-  retries: 20
-  delay: 3
-  when: not ansible_check_mode
 
 - name: PUBGOLF-BACKEND - Define service entry
   ansible.builtin.set_fact:
