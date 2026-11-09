@@ -38,7 +38,9 @@ extension RunRow {
 
     /// "2h ago", "running · 3m 12s", "awaiting approval · plan ready".
     public func subtitle(now: Date = Date()) -> String {
-        guard let run else { return "never run on main" }
+        guard let run else {
+            return status == .queued ? "dispatch requested · waiting for GitHub" : "never run on main"
+        }
 
         switch status {
         case .running, .queued:
