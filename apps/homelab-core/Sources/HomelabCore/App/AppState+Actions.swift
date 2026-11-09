@@ -70,7 +70,22 @@ extension AppState {
         do {
             switch write {
             case .dispatch:
+                let previousID = snapshot.row(for: workflow)?.run?.identifier
                 try await client.dispatch(workflow)
+                pendingDispatches[workflow] = PendingDispatch(
+                    previousRunIdentifier: previousID,
+                    requestedAt: Date()
+                )
+                // The dispatch endpoint returns 204, not a run. Display queued
+                // immediately rather than the stale successful run.
+                var pendingSnapshot = snapshot
+                pendingSnapshot.runRows = pendingSnapshot.runRows.map { row in
+                    row.workflow == workflow
+                        ? RunRow(workflow: workflow, status: .queued, run: nil)
+                        : row
+                }
+                snapshot = pendingSnapshot
+                cache.save(pendingSnapshot)
             case .cancel(let runIdentifier):
                 try await client.cancelRun(identifier: runIdentifier)
             }
