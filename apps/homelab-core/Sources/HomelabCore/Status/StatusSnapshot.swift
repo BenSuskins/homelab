@@ -11,7 +11,15 @@ public struct RunRow: Equatable, Sendable, Codable, Identifiable {
     public var id: String { workflow.id }
 
     public var canTrigger: Bool { !status.isOpen }
-    public var canCancel: Bool { status.isOpen }
+    public var canCancel: Bool { status.isOpen && run != nil }
+
+    /// A dispatch accepted by GitHub may not have a run ID yet. Show it as
+    /// queued without incorrectly offering cancellation of the previous run.
+    public init(workflow: DispatchableWorkflow, status: RunStatus, run: WorkflowRunSummary?) {
+        self.workflow = workflow
+        self.run = run
+        self.status = status
+    }
 
     public init(workflow: DispatchableWorkflow, run: WorkflowRunSummary?) {
         self.workflow = workflow

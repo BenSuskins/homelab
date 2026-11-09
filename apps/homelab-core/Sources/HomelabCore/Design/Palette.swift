@@ -73,8 +73,8 @@ public struct Palette: Sendable, Equatable {
 
     public static let dark = Palette(
         canvas: Color(hex: 0x101318),
-        surface: Color(hex: 0x101318),
-        surfaceRaised: Color(hex: 0x1B2028),
+        surface: Color(hex: 0x191F28),
+        surfaceRaised: Color(hex: 0x252D39),
         border: Color(hex: 0x303945),
         borderStrong: Color(hex: 0x455163),
         textPrimary: Color(hex: 0xEDF0F4),
@@ -89,9 +89,9 @@ public struct Palette: Sendable, Equatable {
     )
 
     public static let light = Palette(
-        canvas: Color(hex: 0xFFFFFF),
+        canvas: Color(hex: 0xF6F7F9),
         surface: Color(hex: 0xFFFFFF),
-        surfaceRaised: Color(hex: 0xF2F4F7),
+        surfaceRaised: Color(hex: 0xEDF1F5),
         border: Color(hex: 0xE0E5EB),
         borderStrong: Color(hex: 0xCBCFD4),
         textPrimary: Color(hex: 0x19202A),
