@@ -17,7 +17,7 @@ struct RunDurationChart: View {
     @Environment(\.palette) private var palette
 
     let bars: [RunBar]
-    var height: CGFloat = 46
+    var height: CGFloat = 28
 
     var body: some View {
         if bars.isEmpty {
@@ -34,7 +34,7 @@ struct RunDurationChart: View {
                 BarMark(
                     x: .value("Run", bar.index),
                     y: .value("Minutes", bar.duration / 60),
-                    width: .fixed(5)
+                    width: .fixed(4)
                 )
                 .foregroundStyle(palette.color(for: bar.status))
                 .cornerRadius(1.5)
