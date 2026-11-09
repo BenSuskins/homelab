@@ -16,10 +16,10 @@ public enum Typeface {
 }
 
 public enum Metrics {
-    public static let gutter: CGFloat = 16
-    public static let cardPadding: CGFloat = 0
-    public static let cardSpacing: CGFloat = 12
-    public static let sectionSpacing: CGFloat = 24
+    public static let gutter: CGFloat = 18
+    public static let cardPadding: CGFloat = 14
+    public static let cardSpacing: CGFloat = 10
+    public static let sectionSpacing: CGFloat = 20
     public static let rowSpacing: CGFloat = 12
     public static let corner: CGFloat = 12
     public static let innerCorner: CGFloat = 9
