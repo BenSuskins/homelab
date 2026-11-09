@@ -69,13 +69,32 @@ extension AppState {
                     runs[entry.workflow] = entry.latest
                 }
 
-                apply(
-                    StatusSnapshot.make(
-                        runs: runs,
-                        pullRequests: pullRequests,
-                        lastRefreshedAt: Date()
-                    )
+                // A successful workflow_dispatch can take several API polls to
+                // appear. Keep the pending row until GitHub returns a new ID.
+                // Expire it eventually if the dispatch was accepted but no run
+                // ever materialised, so the UI cannot get stuck permanently.
+                let now = Date()
+                for (workflow, pending) in pendingDispatches {
+                    let newID = runs[workflow]?.identifier
+                    if (newID != nil && newID != pending.previousRunIdentifier)
+                        || now.timeIntervalSince(pending.requestedAt) > 120 {
+                        pendingDispatches.removeValue(forKey: workflow)
+                    }
+                }
+                for workflow in pendingDispatches.keys {
+                    runs.removeValue(forKey: workflow)
+                }
+                var fresh = StatusSnapshot.make(
+                    runs: runs,
+                    pullRequests: pullRequests,
+                    lastRefreshedAt: now
                 )
+                fresh.runRows = fresh.runRows.map { row in
+                    pendingDispatches[row.workflow] != nil
+                        ? RunRow(workflow: row.workflow, status: .queued, run: nil)
+                        : row
+                }
+                apply(fresh)
             } catch {
                 guard revision == historyRevision else { continue }
                 record(error)
