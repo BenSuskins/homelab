@@ -20,6 +20,8 @@ public final class AppState {
     /// Workflows and pull requests with an in-flight write, so their button can
     /// show a spinner and refuse a second click before the next poll lands.
     public internal(set) var busyWorkflows: Set<DispatchableWorkflow> = []
+    /// Optimistic dispatches, retained until GitHub surfaces a different run ID.
+    var pendingDispatches: [DispatchableWorkflow: PendingDispatch] = [:]
     public internal(set) var busyPullRequests: Set<Int> = []
     public internal(set) var loginItemStatus: LoginItemStatus = .disabled
     public internal(set) var launchAtLoginError: String?
@@ -64,7 +66,8 @@ public final class AppState {
     }
 
     public func canTrigger(_ workflow: DispatchableWorkflow) -> Bool {
-        guard !busyWorkflows.contains(workflow), snapshot.lastRefreshedAt != nil else { return false }
+        guard !busyWorkflows.contains(workflow), pendingDispatches[workflow] == nil,
+              snapshot.lastRefreshedAt != nil else { return false }
         return snapshot.row(for: workflow)?.canTrigger ?? false
     }
 
@@ -125,4 +128,11 @@ public final class AppState {
         updated.errorMessage = failure?.displayMessage
         snapshot = updated
     }
+}
+
+/// Tracks the previous run to distinguish a newly dispatched workflow from
+/// GitHub's eventually consistent response immediately after a 204 dispatch.
+struct PendingDispatch {
+    let previousRunIdentifier: Int?
+    let requestedAt: Date
 }
