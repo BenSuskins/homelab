@@ -224,6 +224,32 @@ struct AppStateTests {
         })
     }
 
+    @Test("manual dispatch stays queued while GitHub still returns the old run")
+    func dispatchedRunWaitsForGitHub() async {
+        let transport = FakeTransport()
+        stubHealthyRepository(transport)
+        let state = makeState(transport)
+        await state.refresh()
+        let previousID = state.snapshot.row(for: .clean)?.run?.identifier
+
+        await state.trigger(.clean)
+
+        let pending = try! #require(state.snapshot.row(for: .clean))
+        #expect(pending.status == .queued)
+        #expect(pending.run == nil)
+        #expect(pending.subtitle() == "dispatch requested · waiting for GitHub")
+        #expect(state.canTrigger(.clean) == false)
+        #expect(state.canCancel(.clean) == false)
+        #expect(state.snapshot.hasActiveRun)
+        #expect(PollingSchedule.interval(for: state.snapshot) == .seconds(10))
+
+        // A later shallow poll still sees the previous run, not the one GitHub
+        // accepted asynchronously. It must not regress to the green old run.
+        await state.refresh()
+        #expect(state.snapshot.row(for: .clean)?.status == .queued)
+        #expect(state.pendingDispatches[.clean]?.previousRunIdentifier == previousID)
+    }
+
     @Test("notifies once when a workflow turns red")
     func notifiesOnNewFailure() async {
         let notifier = RecordingNotifier()
