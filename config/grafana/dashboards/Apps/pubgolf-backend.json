@@ -196,11 +196,12 @@
       },
       "targets": [
         {
-          "expr": "(sum(rate(http_server_requests_seconds_count{job=\"pubgolf-backend\",status=~\"5..\"}[5m])) / sum(rate(http_server_requests_seconds_count{job=\"pubgolf-backend\"}[5m]))) OR on() vector(0)",
+          "expr": "(sum(rate(http_server_requests_seconds_count{job=\"pubgolf-backend\",uri!~\".*(/stream|/actuator/.*)\",status=~\"5..\"}[5m])) or on() vector(0)) / sum(rate(http_server_requests_seconds_count{job=\"pubgolf-backend\",uri!~\".*(/stream|/actuator/.*)\"}[5m]))",
           "refId": "A",
           "legendFormat": "5xx"
         }
-      ]
+      ],
+      "description": "Share of completed non-stream API requests returning 5xx. No data when there is no traffic."
     },
     {
       "title": "P95 Latency",
@@ -250,14 +251,15 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket{job=\"pubgolf-backend\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket{job=\"pubgolf-backend\",uri!~\".*(/stream|/actuator/.*)\"}[5m])))",
           "refId": "A",
           "legendFormat": "p95"
         }
-      ]
+      ],
+      "description": "Completed requests only. Excludes health checks, metrics scrapes, and long-lived SSE streams."
     },
     {
-      "title": "JVM Heap Used",
+      "title": "Go Heap Allocated",
       "type": "stat",
       "gridPos": {
         "h": 4,
@@ -277,18 +279,10 @@
               {
                 "color": "green",
                 "value": null
-              },
-              {
-                "color": "orange",
-                "value": 0.8
-              },
-              {
-                "color": "red",
-                "value": 0.9
               }
             ]
           },
-          "unit": "percentunit"
+          "unit": "bytes"
         },
         "overrides": []
       },
@@ -304,7 +298,7 @@
       },
       "targets": [
         {
-          "expr": "sum(jvm_memory_used_bytes{area=\"heap\",job=\"pubgolf-backend\"}) / sum(jvm_memory_max_bytes{area=\"heap\",job=\"pubgolf-backend\"})",
+          "expr": "go_memstats_heap_alloc_bytes{job=\"pubgolf-backend\"}",
           "refId": "A",
           "legendFormat": "Heap"
         }
@@ -331,14 +325,6 @@
               {
                 "color": "green",
                 "value": null
-              },
-              {
-                "color": "orange",
-                "value": 0.8
-              },
-              {
-                "color": "red",
-                "value": 0.9
               }
             ]
           },
@@ -358,11 +344,12 @@
       },
       "targets": [
         {
-          "expr": "process_cpu_usage{job=\"pubgolf-backend\"}",
+          "expr": "rate(process_cpu_seconds_total{job=\"pubgolf-backend\"}[5m])",
           "refId": "A",
           "legendFormat": "CPU"
         }
-      ]
+      ],
+      "description": "CPU cores used by the process. 100% is one CPU core."
     },
     {
       "title": "Product Metrics",
@@ -631,11 +618,12 @@
       },
       "targets": [
         {
-          "expr": "sum by (uri, method) (rate(http_server_requests_seconds_count{job=\"pubgolf-backend\",uri=~\"$uri\",method=~\"$method\"}[$__rate_interval]))",
+          "expr": "sum by (uri, method) (rate(http_server_requests_seconds_count{job=\"pubgolf-backend\",uri!~\".*(/stream|/actuator/.*)\",uri=~\"$uri\",method=~\"$method\"}[$__rate_interval]))",
           "refId": "A",
           "legendFormat": "{{ method }} {{ uri }}"
         }
-      ]
+      ],
+      "description": "Completed requests; excludes health checks, metrics scrapes, and SSE streams."
     },
     {
       "title": "Error Rate (5xx)",
@@ -672,11 +660,12 @@
       },
       "targets": [
         {
-          "expr": "sum by (uri) (rate(http_server_requests_seconds_count{job=\"pubgolf-backend\",status=~\"5..\",uri=~\"$uri\"}[$__rate_interval]))",
+          "expr": "sum by (uri) (rate(http_server_requests_seconds_count{job=\"pubgolf-backend\",uri!~\".*(/stream|/actuator/.*)\",status=~\"5..\",uri=~\"$uri\"}[$__rate_interval]))",
           "refId": "A",
           "legendFormat": "{{ uri }}"
         }
-      ]
+      ],
+      "description": "Completed requests; excludes health checks, metrics scrapes, and SSE streams."
     },
     {
       "title": "Response Latency (p50 / p95 / p99)",
@@ -716,24 +705,25 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.50, sum by (le) (rate(http_server_requests_seconds_bucket{job=\"pubgolf-backend\",uri=~\"$uri\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(http_server_requests_seconds_bucket{job=\"pubgolf-backend\",uri!~\".*(/stream|/actuator/.*)\",uri=~\"$uri\"}[$__rate_interval])))",
           "refId": "A",
           "legendFormat": "p50"
         },
         {
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket{job=\"pubgolf-backend\",uri=~\"$uri\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket{job=\"pubgolf-backend\",uri!~\".*(/stream|/actuator/.*)\",uri=~\"$uri\"}[$__rate_interval])))",
           "refId": "B",
           "legendFormat": "p95"
         },
         {
-          "expr": "histogram_quantile(0.99, sum by (le) (rate(http_server_requests_seconds_bucket{job=\"pubgolf-backend\",uri=~\"$uri\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(http_server_requests_seconds_bucket{job=\"pubgolf-backend\",uri!~\".*(/stream|/actuator/.*)\",uri=~\"$uri\"}[$__rate_interval])))",
           "refId": "C",
           "legendFormat": "p99"
         }
-      ]
+      ],
+      "description": "Completed requests only. Excludes health checks, metrics scrapes, and long-lived SSE streams."
     },
     {
-      "title": "JVM",
+      "title": "Go Runtime",
       "type": "row",
       "collapsed": false,
       "gridPos": {
@@ -745,7 +735,7 @@
       "panels": []
     },
     {
-      "title": "Heap Usage",
+      "title": "Go Heap",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -782,19 +772,19 @@
       },
       "targets": [
         {
-          "expr": "jvm_memory_used_bytes{job=\"pubgolf-backend\",area=\"heap\"}",
+          "expr": "go_memstats_heap_alloc_bytes{job=\"pubgolf-backend\"}",
           "refId": "A",
-          "legendFormat": "Used"
+          "legendFormat": "Allocated"
         },
         {
-          "expr": "jvm_memory_committed_bytes{job=\"pubgolf-backend\",area=\"heap\"}",
+          "expr": "go_memstats_heap_inuse_bytes{job=\"pubgolf-backend\"}",
           "refId": "B",
-          "legendFormat": "Committed"
+          "legendFormat": "In use"
         },
         {
-          "expr": "jvm_memory_max_bytes{job=\"pubgolf-backend\",area=\"heap\"}",
+          "expr": "go_memstats_heap_sys_bytes{job=\"pubgolf-backend\"}",
           "refId": "C",
-          "legendFormat": "Max"
+          "legendFormat": "Reserved"
         }
       ]
     },
@@ -813,7 +803,7 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "s",
+          "unit": "short",
           "custom": {
             "fillOpacity": 20,
             "lineWidth": 2
@@ -836,14 +826,14 @@
       },
       "targets": [
         {
-          "expr": "rate(jvm_gc_pause_seconds_sum{job=\"pubgolf-backend\"}[$__rate_interval])",
+          "expr": "rate(go_gc_duration_seconds_sum{job=\"pubgolf-backend\"}[$__rate_interval])",
           "refId": "A",
-          "legendFormat": "GC Pause/s"
+          "legendFormat": "Pause seconds / second"
         }
       ]
     },
     {
-      "title": "Thread Count",
+      "title": "Goroutines and OS Threads",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -880,14 +870,14 @@
       },
       "targets": [
         {
-          "expr": "jvm_threads_live_threads{job=\"pubgolf-backend\"}",
+          "expr": "go_goroutines{job=\"pubgolf-backend\"}",
           "refId": "A",
-          "legendFormat": "Live Threads"
+          "legendFormat": "Goroutines"
         },
         {
-          "expr": "jvm_threads_daemon_threads{job=\"pubgolf-backend\"}",
+          "expr": "go_threads{job=\"pubgolf-backend\"}",
           "refId": "B",
-          "legendFormat": "Daemon Threads"
+          "legendFormat": "OS threads"
         }
       ]
     },
@@ -911,8 +901,7 @@
             "fillOpacity": 20,
             "lineWidth": 2
           },
-          "min": 0,
-          "max": 1
+          "min": 0
         },
         "overrides": []
       },
@@ -931,16 +920,12 @@
       },
       "targets": [
         {
-          "expr": "process_cpu_usage{job=\"pubgolf-backend\"}",
+          "expr": "rate(process_cpu_seconds_total{job=\"pubgolf-backend\"}[$__rate_interval])",
           "refId": "A",
-          "legendFormat": "Process CPU"
-        },
-        {
-          "expr": "system_cpu_usage{job=\"pubgolf-backend\"}",
-          "refId": "B",
-          "legendFormat": "System CPU"
+          "legendFormat": "CPU cores"
         }
-      ]
+      ],
+      "description": "100% is one CPU core; values can exceed 100%."
     },
     {
       "title": "Detail",
