@@ -45,6 +45,7 @@ struct HomelabApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
+                .preferredColorScheme(.dark)
                 .environment(session)
                 .task { await session.restore() }
                 .onChange(of: scenePhase) { _, phase in
