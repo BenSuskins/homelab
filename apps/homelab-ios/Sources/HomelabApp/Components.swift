@@ -18,14 +18,8 @@ struct Card<Content: View>: View {
         content
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: Metrics.corner, style: .continuous)
-                    .fill(palette.surface)
-            )
-            .overlay {
-                RoundedRectangle(cornerRadius: Metrics.corner, style: .continuous)
-                    .strokeBorder(palette.border, lineWidth: Metrics.hairline)
-            }
+            .padding(.vertical, 12)
+            .overlay(alignment: .bottom) { Divider().overlay(palette.border) }
     }
 }
 
@@ -134,8 +128,6 @@ struct TrendBadge: View {
     var threshold: Double = 0.1
 
     var body: some View {
-        // Ratios explode when the baseline is tiny; a four-digit percentage
-        // is noise rather than a useful signal in a compact workflow card.
         if let change, abs(change) >= threshold, abs(change) <= 2 {
             let rising = change > 0
             let bad = rising == risingIsBad
@@ -161,7 +153,7 @@ struct StatTile: View {
     var detail: String?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 3) {
             Text(value)
                 .font(Typeface.metric(20))
                 .foregroundStyle(tint ?? palette.textPrimary)
@@ -177,15 +169,6 @@ struct StatTile: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(10)
-        .background(
-            RoundedRectangle(cornerRadius: Metrics.innerCorner, style: .continuous)
-                .fill(palette.surface)
-        )
-        .overlay {
-            RoundedRectangle(cornerRadius: Metrics.innerCorner, style: .continuous)
-                .strokeBorder(palette.border, lineWidth: Metrics.hairline)
-        }
     }
 }
 
@@ -202,6 +185,7 @@ struct StatStrip<Content: View>: View {
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: 16))
             : AnyLayout(HStackLayout(spacing: 12))
         layout { content }
+            .padding(.vertical, 12)
     }
 }
 

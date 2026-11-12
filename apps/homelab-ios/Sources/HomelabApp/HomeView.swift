@@ -74,15 +74,9 @@ struct HomeView: View {
                         size: 9,
                         isPulsing: state.snapshot.hasActiveRun
                     )
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(state.snapshot.runRows.contains { $0.status == .awaitingApproval }
-                             ? "Needs your attention" : "Workflow status")
-                            .font(Typeface.footnote.weight(.medium))
-                            .foregroundStyle(palette.textSecondary)
-                        Text(headline)
-                            .font(Typeface.headline)
-                            .foregroundStyle(palette.textPrimary)
-                    }
+                    Text(headline)
+                        .font(Typeface.headline)
+                        .foregroundStyle(palette.textPrimary)
                     Spacer(minLength: 0)
                     if state.isRefreshing {
                         ProgressView()
@@ -92,7 +86,7 @@ struct HomeView: View {
                 }
 
                 Text(subheadline)
-                    .font(Typeface.footnote)
+                    .font(Typeface.caption)
                     .foregroundStyle(palette.textSecondary)
 
                 if let waiting = state.snapshot.runRows.first(where: { $0.status == .awaitingApproval }),
@@ -100,13 +94,7 @@ struct HomeView: View {
                     Link(destination: url) {
                         Label("Review \(waiting.workflow.displayName) approval", systemImage: "arrow.up.right")
                             .font(Typeface.caption.weight(.semibold))
-                            .frame(maxWidth: .infinity)
                             .frame(minHeight: 44)
-                            .foregroundStyle(palette.accent)
-                            .background(
-                                RoundedRectangle(cornerRadius: Metrics.innerCorner)
-                                    .fill(palette.accentMuted)
-                            )
                     }
                 }
 
@@ -246,7 +234,7 @@ private struct WorkflowCard: View {
 
     var body: some View {
         Card {
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 12) {
                 header
 
                 if let history, !history.bars.isEmpty {
@@ -268,12 +256,12 @@ private struct WorkflowCard: View {
             )
 
             Link(destination: row.run?.url ?? state.repository.actionsURL) {
-                VStack(alignment: .leading, spacing: 3) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(row.workflow.displayName)
-                        .font(Typeface.body.weight(.medium))
+                        .font(Typeface.body)
                         .foregroundStyle(palette.textPrimary)
                     Text(row.subtitle())
-                        .font(Typeface.footnote)
+                        .font(Typeface.caption)
                         .foregroundStyle(palette.textSecondary)
                 }
                 .frame(minHeight: 44)
@@ -286,7 +274,7 @@ private struct WorkflowCard: View {
     }
 
     private func footer(_ history: RunHistory) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 14) {
             if let rate = history.successRate {
                 Text("\(Int((rate * 100).rounded()))% pass")
                     .font(Typeface.footnote)
@@ -299,7 +287,7 @@ private struct WorkflowCard: View {
             }
             TrendBadge(change: history.durationTrend, risingIsBad: true, threshold: 0.25)
             Spacer(minLength: 0)
-            Text("\(history.bars.count) runs")
+            Text("last \(history.bars.count)")
                 .font(Typeface.footnote)
                 .foregroundStyle(palette.textTertiary)
         }
@@ -313,12 +301,12 @@ private struct WorkflowCard: View {
                 .frame(width: 30, height: 30)
                 .tint(palette.textSecondary)
         } else if state.canCancel(row.workflow) {
-            IconButton(symbol: "xmark.circle", label: "Cancel \(row.workflow.displayName) run", tint: palette.negative) {
+            IconButton(symbol: "stop.fill", label: "Cancel \(row.workflow.displayName) run", tint: palette.negative) {
                 Task { await state.cancel(row.workflow) }
             }
         } else {
             IconButton(
-                symbol: "arrow.clockwise",
+                symbol: "play.fill",
                 label: "Run \(row.workflow.displayName)",
                 tint: palette.accent,
                 isEnabled: state.canTrigger(row.workflow)
