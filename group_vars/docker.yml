@@ -10,17 +10,14 @@ tailscale_routes: "192.168.0.0/24"
 
 # AdGuard Home DNS rewrites, rendered into config/adguard/AdGuardHome.yaml.j2.
 # Format matches AdGuard's own schema. `answer` may be an IP or a hostname.
-# NOTE: the three "answer: A" entries are reproduced from the live config as-is;
-# "A" is not a valid IP/hostname, so they are almost certainly inert and the
-# *.suskins.co.uk wildcard is what actually resolves those hosts. Give them a
-# real answer or delete them.
+# The disabled hub entry lets the wildcard resolve Family Hub to Traefik.
 adguard_rewrites:
   - domain: "authelia.suskins.co.uk"
     answer: "A"
     enabled: true
   - domain: "hub.suskins.co.uk"
     answer: "A"
-    enabled: true
+    enabled: false
   - domain: "wedding.suskins.co.uk"
     answer: "A"
     enabled: true
