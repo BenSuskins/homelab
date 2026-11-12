@@ -18,12 +18,6 @@ adguard_rewrites:
   - domain: "authelia.suskins.co.uk"
     answer: "A"
     enabled: true
-  - domain: "hub.suskins.co.uk"
-    answer: "A"
-    enabled: true
-  - domain: "wedding.suskins.co.uk"
-    answer: "A"
-    enabled: true
   - domain: "*.suskins.co.uk"
     answer: "192.168.0.204"
     enabled: true
