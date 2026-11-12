@@ -24,7 +24,7 @@ resource "cloudflare_dns_record" "pubgolf_root" {
 
 # Proxied CNAMEs pointing at the apex. Add a subdomain by extending the set.
 resource "cloudflare_dns_record" "pubgolf_apex_cnames" {
-  for_each = toset(["www", "api"])
+  for_each = toset(jsondecode(file("${path.module}/public-web.json"))["pubgolf.me"].cnames)
 
   zone_id = data.cloudflare_zone.pubgolf.zone_id
   name    = each.value

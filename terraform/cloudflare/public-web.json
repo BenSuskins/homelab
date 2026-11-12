@@ -1,0 +1,10 @@
+{
+  "suskins.co.uk": {
+    "cnames": ["authelia", "www"],
+    "non_route_hosts": ["suskins.co.uk", "www.suskins.co.uk"]
+  },
+  "pubgolf.me": {
+    "cnames": ["www", "api"],
+    "non_route_hosts": ["www.pubgolf.me"]
+  }
+}

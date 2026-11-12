@@ -2,10 +2,6 @@
 # SSL
 ################################################################
 [[tls.certificates]]
-  certFile = "/etc/traefik/certs/authelia.pem"
-  keyFile = "/etc/traefik/certs/authelia_key.pem"  
-
-[[tls.certificates]]
   certFile = "/etc/traefik/certs/cert.pem"
   keyFile = "/etc/traefik/certs/key.pem"
 
@@ -13,15 +9,13 @@
   certFile = "/etc/traefik/certs/pubgolfCert.pem"
   keyFile = "/etc/traefik/certs/pubgolfKey.pem"  
 
-[[tls.certificates]]
-  certFile = "/etc/traefik/certs/local.pem"
-  keyFile = "/etc/traefik/certs/local_key.pem"  
-
 [tls.stores]
   [tls.stores.default]
-    [tls.stores.default.defaultCertificate]
-        certFile = "/etc/traefik/certs/local.pem"
-        keyFile = "/etc/traefik/certs/local_key.pem"
+    [tls.stores.default.defaultGeneratedCert]
+      resolver = "cloudflare"
+      [tls.stores.default.defaultGeneratedCert.domain]
+        main = "suskins.co.uk"
+        sans = ["*.suskins.co.uk"]
 
 [tls.options]
   [tls.options.default]

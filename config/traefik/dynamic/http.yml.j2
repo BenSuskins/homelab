@@ -16,6 +16,9 @@ http:
       entryPoints:
         - websecure
       middlewares:
+{% if not (svc.public | default(false)) %}
+        - private-network
+{% endif %}
 {% if svc.secured %}
         - authelia
 {% endif %}
@@ -25,6 +28,14 @@ http:
         - {{ svc.middleware }}
 {% endif %}
       tls: true
+{% endfor %}
+
+  middlewares:
+    private-network:
+      ipAllowList:
+        sourceRange:
+{% for network in traefik_private_networks %}
+          - "{{ network }}"
 {% endfor %}
 
   services:

@@ -1,0 +1,30 @@
+---
+- name: TRAEFIK - Read public DNS declarations
+  ansible.builtin.set_fact:
+    public_web_dns: "{{ lookup('ansible.builtin.file', playbook_dir + '/../terraform/cloudflare/public-web.json') | from_json }}"
+
+- name: TRAEFIK - Validate exposure flags
+  ansible.builtin.assert:
+    that:
+      - item is boolean
+    fail_msg: Every public exposure flag must be a boolean.
+    quiet: true
+  loop: "{{ all_services | selectattr('public', 'defined') | map(attribute='public') | list }}"
+
+- name: TRAEFIK - Check public DNS and routes agree
+  ansible.builtin.assert:
+    that:
+      - public_route_hosts | difference(public_dns_hosts) | length == 0
+      - public_dns_hosts | difference(non_route_hosts) | difference(public_route_hosts) | length == 0
+    fail_msg: >-
+      Public DNS and Traefik routes disagree. Check the public service flags and
+      terraform/cloudflare/public-web.json exceptions before deploying.
+  vars:
+    proxied_services: "{{ all_services | selectattr('proxied', 'defined') | selectattr('proxied') | list }}"
+    public_route_hosts: "{{ proxied_services | selectattr('public', 'defined') | selectattr('public') | map(attribute='host') | unique | list }}"
+    public_dns_hosts: >-
+      {{ [ 'suskins.co.uk', 'pubgolf.me' ]
+         + (public_web_dns['suskins.co.uk'].cnames | map('regex_replace', '$', '.suskins.co.uk') | list)
+         + (public_web_dns['pubgolf.me'].cnames | map('regex_replace', '$', '.pubgolf.me') | list) }}
+    non_route_hosts: "{{ public_web_dns['suskins.co.uk'].non_route_hosts + public_web_dns['pubgolf.me'].non_route_hosts }}"
+

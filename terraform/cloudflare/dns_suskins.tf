@@ -24,7 +24,7 @@ resource "cloudflare_dns_record" "suskins_root" {
 
 # Proxied CNAMEs pointing at the apex. Add a subdomain by extending the set.
 resource "cloudflare_dns_record" "suskins_apex_cnames" {
-  for_each = toset(["authelia", "www"])
+  for_each = toset(jsondecode(file("${path.module}/public-web.json"))["suskins.co.uk"].cnames)
 
   zone_id = data.cloudflare_zone.suskins.zone_id
   name    = each.value

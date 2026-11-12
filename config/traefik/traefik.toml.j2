@@ -85,3 +85,10 @@
   [providers.file]
     directory = "/etc/traefik/dynamic"
     watch = true
+
+[certificatesResolvers.cloudflare.acme]
+  storage = "/etc/traefik/acme/acme.json"
+
+  [certificatesResolvers.cloudflare.acme.dnsChallenge]
+    provider = "cloudflare"
+    resolvers = ["1.1.1.1:53", "8.8.8.8:53"]
