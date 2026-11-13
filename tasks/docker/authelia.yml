@@ -75,6 +75,7 @@
       healthcheck_path: /api/health
       homepage: true
       proxied: true
+      public: true
       metrics: true
       metrics_port: 9959
 

@@ -59,6 +59,7 @@
       healthcheck: true
       healthcheck_path: "/actuator/health"
       proxied: true
+      public: true
       path_prefix: /api/v1
       metrics: true
       metrics_port: 8080

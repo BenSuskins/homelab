@@ -1,4 +1,12 @@
 ---
+- name: TRAEFIK - Validate DNS token
+  ansible.builtin.assert:
+    that:
+      - TRAEFIK_CLOUDFLARE_DNS_API_TOKEN is defined
+      - TRAEFIK_CLOUDFLARE_DNS_API_TOKEN | length > 0
+    fail_msg: Set TRAEFIK_CLOUDFLARE_DNS_API_TOKEN in the Ansible vault before deployment.
+  no_log: true
+
 - name: TRAEFIK - Create directories and set permissions
   ansible.builtin.file:
     path: "{{ item }}"
@@ -12,9 +20,37 @@
     - "{{ base_dir }}/traefik/dynamic"
     - "{{ base_dir }}/traefik/logs"
 
+- name: TRAEFIK - Create ACME storage directory
+  ansible.builtin.file:
+    path: "{{ base_dir }}/traefik/acme"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    mode: "0700"
+
+- name: TRAEFIK - Initialize ACME storage
+  ansible.builtin.copy:
+    content: ""
+    dest: "{{ base_dir }}/traefik/acme/acme.json"
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    mode: "0600"
+    force: false
+
+- name: TRAEFIK - Protect ACME storage
+  ansible.builtin.file:
+    path: "{{ base_dir }}/traefik/acme/acme.json"
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    mode: "0600"
+
 - name: TRAEFIK - Aggregate services from all hosts
   ansible.builtin.include_tasks:
     file: "../tasks/core/aggregate_services.yml"
+
+- name: TRAEFIK - Validate public DNS and routes
+  ansible.builtin.include_tasks:
+    file: "../tasks/core/validate_public_web.yml"
 
 - name: TRAEFIK - Create config
   ansible.builtin.template:
@@ -64,8 +100,6 @@
     dest: "{{ base_dir }}/traefik/dynamic/http.yml"
     owner: "{{ username }}"
     group: "{{ username }}"
-  vars:
-    all_services: "{{ all_docker_services }}"
 
 - name: TRAEFIK - Pre-pull image
   community.docker.docker_image:
@@ -76,6 +110,7 @@
     image: "traefik:v3.7"
 
 - name: TRAEFIK - Deploy container
+  no_log: true
   community.docker.docker_container:
     name: traefik
     image: "traefik:v3.7"
@@ -84,8 +119,8 @@
     pull: false
     networks:
       - name: homelab
-    command: >
-      --configFile=/config/traefik.yml
+    entrypoint: /usr/local/bin/traefik
+    command: "--configFile=/etc/traefik/traefik.toml"
     ports:
       - "80:80"
       - "443:443"
@@ -95,6 +130,7 @@
       - "{{ base_dir }}/traefik/logs:/logs"
     env:
       TZ: "{{ timezone }}"
+      CF_DNS_API_TOKEN: "{{ TRAEFIK_CLOUDFLARE_DNS_API_TOKEN }}"
 
 - name: TRAEFIK - Define service entry
   ansible.builtin.set_fact:

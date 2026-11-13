@@ -33,6 +33,7 @@
       secured: false
       healthcheck: true
       proxied: true
+      public: true
 
 - name: PUBGOLF - Append to docker_services
   ansible.builtin.set_fact:

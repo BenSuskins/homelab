@@ -5,6 +5,9 @@ monitor_ip: 192.168.0.203
 nas_ip: 192.168.0.100
 timezone: Europe/London
 
+traefik_private_networks:
+  - "192.168.0.0/24"
+
 cloudflare_ips:
   - "173.245.48.0/20"
   - "103.21.244.0/22"

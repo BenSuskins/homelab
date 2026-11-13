@@ -1,0 +1,45 @@
+---
+- hosts: localhost
+  gather_facts: false
+  vars:
+    traefik_private_networks: [192.168.0.0/24]
+    cloudflare_ips: [173.245.48.0/20]
+    all_services:
+      - {name: private, host: hub.suskins.co.uk, ip: 192.168.0.202, port: 8081, scheme: http, secured: false, proxied: true}
+      - {name: authelia, host: authelia.suskins.co.uk, ip: 192.168.0.204, port: 9091, scheme: http, secured: false, proxied: true, public: true}
+      - {name: pubgolf, host: pubgolf.me, ip: 192.168.0.202, port: 3003, scheme: http, secured: false, proxied: true, public: true}
+      - {name: pubgolf-backend, host: api.pubgolf.me, ip: 192.168.0.202, port: 8080, scheme: http, secured: false, proxied: true, public: true}
+  tasks:
+    - include_tasks: ../tasks/core/validate_public_web.yml
+    - name: Render routes
+      ansible.builtin.set_fact:
+        routes: "{{ lookup('ansible.builtin.template', '../config/traefik/dynamic/http.yml.j2') | from_yaml }}"
+    - name: Verify private and public route behavior
+      ansible.builtin.assert:
+        that:
+          - "'private-network' in routes.http.routers.private.middlewares"
+          - "'private-network' not in routes.http.routers.authelia.middlewares"
+          - "'private-network' not in routes.http.routers.pubgolf.middlewares"
+          - routes.http.middlewares['private-network'].ipAllowList.sourceRange == traefik_private_networks
+    - name: Verify public route without DNS is rejected
+      block:
+        - name: Declare an unexpected public route
+          ansible.builtin.set_fact:
+            all_services: "{{ all_services + [{'name': 'missing', 'host': 'missing.suskins.co.uk', 'proxied': true, 'public': true}] }}"
+        - include_tasks: ../tasks/core/validate_public_web.yml
+        - ansible.builtin.fail:
+            msg: A public route without DNS was accepted.
+      rescue:
+        - ansible.builtin.assert:
+            that: "'Public DNS and Traefik routes disagree' in ansible_failed_result.msg"
+    - name: Verify DNS without a public route is rejected
+      block:
+        - name: Remove a public route
+          ansible.builtin.set_fact:
+            all_services: "{{ all_services | rejectattr('name', 'in', ['missing', 'pubgolf-backend']) | list }}"
+        - include_tasks: ../tasks/core/validate_public_web.yml
+        - ansible.builtin.fail:
+            msg: Public DNS without a route was accepted.
+      rescue:
+        - ansible.builtin.assert:
+            that: "'Public DNS and Traefik routes disagree' in ansible_failed_result.msg"
