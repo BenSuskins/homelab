@@ -10,14 +10,7 @@ tailscale_routes: "192.168.0.0/24"
 
 # AdGuard Home DNS rewrites, rendered into config/adguard/AdGuardHome.yaml.j2.
 # Format matches AdGuard's own schema. `answer` may be an IP or a hostname.
-# NOTE: the three "answer: A" entries are reproduced from the live config as-is;
-# "A" is not a valid IP/hostname, so they are almost certainly inert and the
-# *.suskins.co.uk wildcard is what actually resolves those hosts. Give them a
-# real answer or delete them.
 adguard_rewrites:
-  - domain: "authelia.suskins.co.uk"
-    answer: "A"
-    enabled: true
   - domain: "*.suskins.co.uk"
     answer: "192.168.0.204"
     enabled: true
