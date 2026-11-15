@@ -18,7 +18,7 @@ ansible-playbook plays/clean.yml --ask-vault-pass
 ansible-vault edit vault.yml
 ```
 
-The inventory defines `mediaserver`, `docker`, `development`, and `monitor` groups. Shared variables live in `group_vars/all.yml`; host-group variables and container registrations live in `group_vars/`.
+The inventory defines `mediaserver`, `docker`, `gateway`, and `monitor` groups. Shared variables live in `group_vars/all.yml`; host-group variables and container registrations live in `group_vars/`.
 
 Container tasks live in `tasks/docker/`. Follow the existing pattern: create required directories, pre-pull the pinned image with `docker_image` and `force_source: true`, create the container with `pull: false`, define its service entry, then append it to `docker_services`. Keep the image reference in the pre-pull task and container task identical so Renovate updates both. Container-specific host prerequisites belong in that container's task file.
 

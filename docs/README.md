@@ -19,7 +19,7 @@ Renovate.
 ## Features
 
 - **Unified service definition** — one YAML block per container drives Traefik, Gatus, Prometheus, Homepage, and DNS
-- **Per-group hosts** — `mediaserver`, `docker`, `development`, `monitor`
+- **Per-group hosts** — `mediaserver`, `docker`, `gateway`, `monitor`
 - **Vault-encrypted secrets** committed alongside the playbooks
 - **Renovate-tracked image versions** (pinned, never `:latest`)
 - **Generated config templates** for Traefik, Gatus, Prometheus, and Homepage

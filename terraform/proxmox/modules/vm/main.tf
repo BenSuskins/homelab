@@ -14,6 +14,8 @@ resource "proxmox_virtual_environment_vm" "this" {
   tags        = var.tags
   pool_id     = var.pool_id
 
+  reboot_after_update = var.reboot_after_update
+
   on_boot       = var.on_boot
   started       = var.started
   protection    = var.protection

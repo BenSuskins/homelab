@@ -12,7 +12,7 @@ module "mediaserver" {
   description     = "Media Server"
 
   # Boots last so the NAS has time to come up first; the 240s gap is set as
-  # development's up_delay (the preceding guest), since Proxmox up_delay
+  # gateway's up_delay (the preceding guest), since Proxmox up_delay
   # applies before the NEXT guest starts.
   startup_order = 5
 }
