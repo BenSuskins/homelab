@@ -14,10 +14,10 @@ ansible_user=mediaserver
 [docker:vars]
 ansible_user=docker
 
-[development]
-192.168.0.204 friendly_name="Development"
+[gateway]
+192.168.0.204 friendly_name="Gateway"
 
-[development:vars]
+[gateway:vars]
 ansible_user=development
 
 [monitor]

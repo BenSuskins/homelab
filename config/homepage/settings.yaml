@@ -45,8 +45,8 @@ layout:
     icon: mdi-chart-multiple
     style: row
     columns: 4
-  Development:
-    icon: mdi-code-json
+  Gateway:
+    icon: mdi-router-network
     style: row
     columns: 4
   Games:

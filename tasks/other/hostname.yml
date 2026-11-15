@@ -1,0 +1,20 @@
+---
+- name: Preserve the Ansible-managed hostname across cloud-init runs
+  ansible.builtin.copy:
+    dest: /etc/cloud/cloud.cfg.d/99-preserve-hostname.cfg
+    content: |
+      preserve_hostname: true
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Set the local hostname mapping
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: '^127\.0\.1\.1\s+'
+    line: "127.0.1.1 {{ managed_hostname }}"
+
+- name: Set the guest hostname
+  ansible.builtin.hostname:
+    name: "{{ managed_hostname }}"
+    use: systemd

@@ -13,6 +13,11 @@
         fail_msg: "ansible_facts['os_family'] must be defined (run gather_facts)"
       tags: [validation]
 
+    - name: SETUP - Configure hostname
+      ansible.builtin.import_tasks: ../tasks/other/hostname.yml
+      when: managed_hostname is defined
+      tags: [hostname]
+
     - name: SETUP - Update server and install base packages
       block:
         - name: SETUP - Include base tasks

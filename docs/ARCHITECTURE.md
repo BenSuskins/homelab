@@ -5,7 +5,7 @@
 ## Overview
 
 A control node runs the playbooks against four host groups (`mediaserver`,
-`docker`, `development`, `monitor`). Each container is defined by a unified
+`docker`, `gateway`, `monitor`). Each container is defined by a unified
 service entry that drives Traefik (routing), Gatus (health), Prometheus
 (metrics), Homepage (dashboard), and Cloudflare (DNS). Service definitions
 are aggregated across hosts and rendered into config templates.
@@ -16,11 +16,11 @@ are aggregated across hosts and rendered into config templates.
 flowchart LR
     Control[Control Node / CI] -->|SSH| Media[mediaserver]
     Control -->|SSH| Docker[docker]
-    Control -->|SSH| Dev[development]
+    Control -->|SSH| Gateway[gateway]
     Control -->|SSH| Monitor[monitor]
     Media --> Traefik
     Docker --> Traefik
-    Dev --> Traefik
+    Gateway --> Traefik
     Traefik --> Internet
     Monitor --> Prometheus
     Monitor --> Loki
@@ -144,7 +144,7 @@ _Generated from live inventory on 2026-06-20T20:52:52Z. Source of truth is `grou
 | radarr-mcp | 192.168.0.206 | 4200 | [192.168.0.206:4200](http://192.168.0.206:4200) | — | false |
 | sonarr-mcp | 192.168.0.206 | 9171 | [192.168.0.206:9171](http://192.168.0.206:9171) | — | false |
 
-### Development
+### Gateway
 
 | Service | Host | Port | Direct URL | URL | Exposed |
 |---------|------|------|------------|-----|---------|

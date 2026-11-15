@@ -80,6 +80,12 @@ variable "tags" {
 
 # --- Identity & lifecycle ---
 
+variable "reboot_after_update" {
+  description = "Allow Proxmox to restart the VM when an update requires it."
+  type        = bool
+  default     = true
+}
+
 variable "description" {
   description = "Free-text description shown in the Proxmox UI"
   type        = string
