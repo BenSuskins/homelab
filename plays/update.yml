@@ -29,11 +29,6 @@
         fail_msg: "containers and core_containers must be defined"
       tags: [validation]
 
-    - name: UPDATE - Configure hostname
-      ansible.builtin.import_tasks: ../tasks/other/hostname.yml
-      when: managed_hostname is defined
-      tags: [hostname]
-
     - name: UPDATE - Update packages
       ansible.builtin.apt:
         update_cache: true

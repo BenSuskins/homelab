@@ -1,7 +1,6 @@
 ---
 firewall: true
 base_dir: /home/development/server-development
-managed_hostname: gateway
 
 special_containers:
   - traefik
