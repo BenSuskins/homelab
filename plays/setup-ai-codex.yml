@@ -84,6 +84,38 @@
         mode: "0600"
         modify_inactive_option: false
 
+    - name: CODEX - Install remote-control service
+      become: true
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/codex-remote-control.service
+        mode: "0644"
+        content: |
+          [Unit]
+          Description=Codex remote-control daemon
+          Wants=network-online.target
+          After=network-online.target
+
+          [Service]
+          Type=oneshot
+          RemainAfterExit=yes
+          User=ai
+          Environment=HOME=/home/ai
+          Environment=PATH=/usr/local/bin:/usr/bin:/bin
+          ExecStart=/usr/local/bin/codex app-server daemon bootstrap --remote-control
+          TimeoutStartSec=90
+
+          [Install]
+          WantedBy=multi-user.target
+      register: codex_remote_control_unit
+
+    - name: CODEX - Enable remote-control service
+      become: true
+      ansible.builtin.systemd_service:
+        name: codex-remote-control.service
+        enabled: true
+        state: started
+        daemon_reload: "{{ codex_remote_control_unit.changed }}"
+
     - name: CODEX - Check skills snapshot
       ansible.builtin.stat:
         path: "{{ codex_home }}/.dotfiles-skills-snapshot"
