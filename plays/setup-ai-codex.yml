@@ -4,8 +4,8 @@
   gather_facts: true
   vars:
     codex_version: "0.160.0"
-    codex_checksum: "sha256:306865417d4ee7a927785852910a527f41e1e159add390ac5ae3accb67d44a13"
-    codex_release: "codex-x86_64-unknown-linux-musl"
+    codex_checksum: "sha256:4fcc47ab57f52ff75363951a8761146cd10c8288bd86fed45487dbb204a16b71"
+    codex_release: "codex-package-x86_64-unknown-linux-musl"
     codex_home: /home/ai/.codex
     codex_workspace: /home/ai/workspace
     codex_skills_source: "{{ lookup('env', 'HOME') }}/.codex/skills"
@@ -28,7 +28,7 @@
     - name: CODEX - Create release directory
       become: true
       ansible.builtin.file:
-        path: "/opt/codex/{{ codex_version }}"
+        path: "/opt/codex/{{ codex_version }}/package"
         state: directory
         mode: "0755"
 
@@ -36,22 +36,22 @@
       become: true
       ansible.builtin.get_url:
         url: "https://github.com/openai/codex/releases/download/rust-v{{ codex_version }}/{{ codex_release }}.tar.gz"
-        dest: "/opt/codex/{{ codex_version }}/release.tar.gz"
+        dest: "/opt/codex/{{ codex_version }}/package.tar.gz"
         checksum: "{{ codex_checksum }}"
         mode: "0644"
 
     - name: CODEX - Extract release
       become: true
       ansible.builtin.unarchive:
-        src: "/opt/codex/{{ codex_version }}/release.tar.gz"
-        dest: "/opt/codex/{{ codex_version }}"
+        src: "/opt/codex/{{ codex_version }}/package.tar.gz"
+        dest: "/opt/codex/{{ codex_version }}/package"
         remote_src: true
-        creates: "/opt/codex/{{ codex_version }}/{{ codex_release }}"
+        creates: "/opt/codex/{{ codex_version }}/package/codex-package.json"
 
     - name: CODEX - Link executable
       become: true
       ansible.builtin.file:
-        src: "/opt/codex/{{ codex_version }}/{{ codex_release }}"
+        src: "/opt/codex/{{ codex_version }}/package/bin/codex"
         dest: /usr/local/bin/codex
         state: link
 
