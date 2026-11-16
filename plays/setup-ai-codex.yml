@@ -7,6 +7,7 @@
     codex_checksum: "sha256:4fcc47ab57f52ff75363951a8761146cd10c8288bd86fed45487dbb204a16b71"
     codex_release: "codex-package-x86_64-unknown-linux-musl"
     codex_home: /home/ai/.codex
+    codex_default_model: gpt-6.1-terra
     codex_workspace: /home/ai/workspace
     codex_skills_source: "{{ lookup('env', 'HOME') }}/.codex/skills"
     codex_github_owner: BenSuskins
@@ -74,6 +75,14 @@
       loop:
         - {name: user.name, value: Ben Suskins}
         - {name: user.email, value: suskinsdevelopment@gmail.com}
+
+    - name: CODEX - Set default model
+      community.general.ini_file:
+        path: "{{ codex_home }}/config.toml"
+        option: model
+        value: '"{{ codex_default_model }}"'
+        mode: "0600"
+        modify_inactive_option: false
 
     - name: CODEX - Check skills snapshot
       ansible.builtin.stat:
