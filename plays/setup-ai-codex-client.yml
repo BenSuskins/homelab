@@ -1,0 +1,20 @@
+---
+- name: SETUP - Configure the AI Codex SSH client
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    codex_ssh_directory: "{{ lookup('env', 'HOME') }}/.ssh"
+  tasks:
+    - name: CODEX - Configure AI host SSH alias
+      ansible.builtin.blockinfile:
+        path: "{{ codex_ssh_directory }}/config"
+        create: true
+        mode: "0600"
+        marker: "# {mark} ANSIBLE MANAGED AI CODEX"
+        block: |
+          Host ai-codex
+            HostName 192.168.0.206
+            User ai
+            IdentityFile {{ codex_ssh_directory }}/homelab
+            IdentitiesOnly yes

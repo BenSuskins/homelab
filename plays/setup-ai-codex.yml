@@ -1,0 +1,310 @@
+---
+- name: SETUP - Prepare the AI Codex workspace
+  hosts: ai
+  gather_facts: true
+  vars:
+    codex_version: "0.160.0"
+    codex_checksum: "sha256:4fcc47ab57f52ff75363951a8761146cd10c8288bd86fed45487dbb204a16b71"
+    codex_release: "codex-package-x86_64-unknown-linux-musl"
+    codex_home: /home/ai/.codex
+    codex_default_model: gpt-6.1-terra
+    codex_workspace: /home/ai/workspace
+    codex_skills_source: "{{ lookup('env', 'HOME') }}/.codex/skills"
+    codex_github_owner: BenSuskins
+    codex_github_key: /home/ai/.ssh/id_ed25519_codex_github
+
+  tasks:
+    - name: CODEX - Check host architecture
+      ansible.builtin.assert:
+        that:
+          - ansible_facts['system'] == 'Linux'
+          - ansible_facts['architecture'] == 'x86_64'
+
+    - name: CODEX - Install Git and SSH
+      become: true
+      ansible.builtin.package:
+        name: [git, openssh-client, ca-certificates]
+        state: present
+
+    - name: CODEX - Create release directory
+      become: true
+      ansible.builtin.file:
+        path: "/opt/codex/{{ codex_version }}/package"
+        state: directory
+        mode: "0755"
+
+    - name: CODEX - Download pinned release
+      become: true
+      ansible.builtin.get_url:
+        url: "https://github.com/openai/codex/releases/download/rust-v{{ codex_version }}/{{ codex_release }}.tar.gz"
+        dest: "/opt/codex/{{ codex_version }}/package.tar.gz"
+        checksum: "{{ codex_checksum }}"
+        mode: "0644"
+
+    - name: CODEX - Extract release
+      become: true
+      ansible.builtin.unarchive:
+        src: "/opt/codex/{{ codex_version }}/package.tar.gz"
+        dest: "/opt/codex/{{ codex_version }}/package"
+        remote_src: true
+        creates: "/opt/codex/{{ codex_version }}/package/codex-package.json"
+
+    - name: CODEX - Link executable
+      become: true
+      ansible.builtin.file:
+        src: "/opt/codex/{{ codex_version }}/package/bin/codex"
+        dest: /usr/local/bin/codex
+        state: link
+
+    - name: CODEX - Create user directories
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        mode: "{{ item.mode }}"
+      loop:
+        - {path: "{{ codex_home }}", mode: "0700"}
+        - {path: "{{ codex_home }}/skills", mode: "0755"}
+        - {path: "{{ codex_workspace }}", mode: "0755"}
+        - {path: /home/ai/.ssh, mode: "0700"}
+
+    - name: CODEX - Configure Git identity
+      community.general.git_config:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        scope: global
+      loop:
+        - {name: user.name, value: Ben Suskins}
+        - {name: user.email, value: suskinsdevelopment@gmail.com}
+
+    - name: CODEX - Set default model
+      community.general.ini_file:
+        path: "{{ codex_home }}/config.toml"
+        option: model
+        value: '"{{ codex_default_model }}"'
+        mode: "0600"
+        modify_inactive_option: false
+
+    - name: CODEX - Install remote-control service
+      become: true
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/codex-remote-control.service
+        mode: "0644"
+        content: |
+          [Unit]
+          Description=Codex remote-control daemon
+          Wants=network-online.target
+          After=network-online.target
+
+          [Service]
+          Type=oneshot
+          RemainAfterExit=yes
+          User=ai
+          Environment=HOME=/home/ai
+          Environment=PATH=/usr/local/bin:/usr/bin:/bin
+          ExecStart=/usr/local/bin/codex app-server daemon bootstrap --remote-control
+          TimeoutStartSec=90
+
+          [Install]
+          WantedBy=multi-user.target
+      register: codex_remote_control_unit
+
+    - name: CODEX - Enable remote-control service
+      become: true
+      ansible.builtin.systemd_service:
+        name: codex-remote-control.service
+        enabled: true
+        state: started
+        daemon_reload: "{{ codex_remote_control_unit.changed }}"
+
+    - name: CODEX - Check skills snapshot
+      ansible.builtin.stat:
+        path: "{{ codex_home }}/.dotfiles-skills-snapshot"
+      register: codex_skills_snapshot
+
+    - name: CODEX - Resolve personal skills on controller
+      ansible.builtin.command:
+        argv:
+          - python3
+          - -c
+          - |
+            import json, os, sys
+            root = sys.argv[1]
+            skills = [os.path.join(root, name) for name in sorted(os.listdir(root))
+                      if not name.startswith('.') and os.path.isfile(os.path.join(root, name, 'SKILL.md'))]
+            print(json.dumps(skills))
+          - "{{ codex_skills_source }}"
+      delegate_to: localhost
+      changed_when: false
+      register: codex_source_skills
+      when: not codex_skills_snapshot.stat.exists
+
+    - name: CODEX - Require resolved skills
+      ansible.builtin.assert:
+        that:
+          - codex_source_skills.stdout | from_json | length > 0
+      when: not codex_skills_snapshot.stat.exists
+
+    - name: CODEX - Copy resolved skills once
+      when: not codex_skills_snapshot.stat.exists
+      block:
+        - name: CODEX - Create temporary skills archive
+          ansible.builtin.tempfile:
+            state: file
+            suffix: .tar.gz
+          delegate_to: localhost
+          register: codex_skills_archive
+
+        - name: CODEX - Archive dereferenced skills
+          ansible.builtin.command:
+            argv:
+              - python3
+              - -c
+              - |
+                import json, os, sys, tarfile
+                with tarfile.open(sys.argv[1], 'w:gz', dereference=True) as archive:
+                    for path in json.load(sys.stdin):
+                        archive.add(path, arcname=os.path.basename(path))
+              - "{{ codex_skills_archive.path }}"
+            stdin: "{{ codex_source_skills.stdout }}"
+          delegate_to: localhost
+          changed_when: false
+
+        - name: CODEX - Extract skills snapshot
+          ansible.builtin.unarchive:
+            src: "{{ codex_skills_archive.path }}"
+            dest: "{{ codex_home }}/skills"
+      always:
+        - name: CODEX - Remove temporary skills archive
+          ansible.builtin.file:
+            path: "{{ codex_skills_archive.path }}"
+            state: absent
+          delegate_to: localhost
+          when: codex_skills_archive.path is defined
+
+    - name: CODEX - Mark skills snapshot complete
+      ansible.builtin.copy:
+        content: "One-time snapshot of resolved dotfiles skills.\n"
+        dest: "{{ codex_home }}/.dotfiles-skills-snapshot"
+        mode: "0644"
+        force: false
+      when: not codex_skills_snapshot.stat.exists
+
+    - name: CODEX - Generate dedicated GitHub key
+      ansible.builtin.command:
+        argv: [ssh-keygen, -q, -t, ed25519, -N, '', -C, ai-codex-workspace, -f, "{{ codex_github_key }}"]
+        creates: "{{ codex_github_key }}"
+
+    - name: CODEX - Configure dedicated GitHub SSH identity
+      ansible.builtin.blockinfile:
+        path: /home/ai/.ssh/config
+        create: true
+        mode: "0600"
+        marker: "# {mark} ANSIBLE MANAGED CODEX GITHUB"
+        block: |
+          Host github-codex
+            HostName github.com
+            HostKeyAlias github.com
+            User git
+            IdentityFile {{ codex_github_key }}
+            IdentitiesOnly yes
+
+    - name: CODEX - Read public key
+      ansible.builtin.slurp:
+        src: "{{ codex_github_key }}.pub"
+      register: codex_public_key
+      no_log: true
+
+    - name: CODEX - List registered GitHub keys
+      ansible.builtin.command:
+        argv: [gh, api, --paginate, user/keys, --jq, '.[].key']
+      delegate_to: localhost
+      changed_when: false
+      register: codex_registered_keys
+      no_log: true
+
+    - name: CODEX - Register dedicated GitHub key
+      ansible.builtin.command:
+        argv:
+          - gh
+          - api
+          - --method
+          - POST
+          - user/keys
+          - -f
+          - title=ai-codex-workspace
+          - -f
+          - "key={{ codex_public_key.content | b64decode | trim }}"
+      delegate_to: localhost
+      when: (codex_public_key.content | b64decode | trim).split(' ')[1] not in (codex_registered_keys.stdout | default(''))
+      changed_when: true
+      no_log: true
+
+    - name: CODEX - Fetch GitHub SSH host keys
+      ansible.builtin.command:
+        argv: [gh, api, meta, --jq, '.ssh_keys[]']
+      delegate_to: localhost
+      changed_when: false
+      register: codex_github_host_keys
+
+    - name: CODEX - Trust GitHub SSH host keys
+      ansible.builtin.known_hosts:
+        path: /home/ai/.ssh/known_hosts
+        name: github.com
+        key: "github.com {{ item }}"
+      loop: "{{ codex_github_host_keys.stdout_lines }}"
+      loop_control:
+        label: "{{ item.split(' ')[0] }}"
+
+    - name: CODEX - List owned repositories
+      ansible.builtin.command:
+        argv: [gh, repo, list, "{{ codex_github_owner }}", --limit, '1000', --json, 'name,sshUrl,owner']
+      delegate_to: localhost
+      changed_when: false
+      register: codex_github_repositories
+      no_log: true
+
+    - name: CODEX - Check workspace paths
+      ansible.builtin.stat:
+        path: "{{ codex_workspace }}/{{ item.name }}"
+      loop: "{{ codex_github_repositories.stdout | from_json | selectattr('owner.login', 'equalto', codex_github_owner) | list }}"
+      loop_control:
+        label: "{{ item.name }}"
+      register: codex_workspace_paths
+
+    # Each new clone starts at its current default branch; existing paths are preserved.
+    - name: CODEX - Clone missing repositories # noqa: latest[git]
+      ansible.builtin.git:
+        repo: "{{ item.item.sshUrl | replace('github.com:', 'github-codex:') }}"
+        dest: "{{ codex_workspace }}/{{ item.item.name }}"
+        key_file: "{{ codex_github_key }}"
+        version: HEAD
+        update: false
+      loop: "{{ codex_workspace_paths.results }}"
+      loop_control:
+        label: "{{ item.item.name }}"
+      when: not item.stat.exists
+      register: codex_clone_results
+      ignore_errors: true
+
+    - name: CODEX - Report failed clones
+      ansible.builtin.assert:
+        that:
+          - codex_clone_results.results | selectattr('failed', 'defined') | selectattr('failed') | list | length == 0
+        fail_msg: "One or more clones failed. See the repository names in the clone task output."
+
+    - name: CODEX - Check repositories are Git checkouts
+      ansible.builtin.stat:
+        path: "{{ codex_workspace }}/{{ item.name }}/.git"
+      loop: "{{ codex_github_repositories.stdout | from_json | selectattr('owner.login', 'equalto', codex_github_owner) | list }}"
+      loop_control:
+        label: "{{ item.name }}"
+      register: codex_checkout_paths
+
+    - name: CODEX - Report paths that are not Git checkouts
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists
+        fail_msg: "{{ item.item.name }} already exists but is not a Git checkout. It was left unchanged."
+      loop: "{{ codex_checkout_paths.results }}"
+      loop_control:
+        label: "{{ item.item.name }}"
