@@ -107,13 +107,13 @@
     source: pull
     force_source: true
   vars:
-    image: "traefik:v3.7"
+    image: "traefik:v3.8"
 
 - name: TRAEFIK - Deploy container
   no_log: true
   community.docker.docker_container:
     name: traefik
-    image: "traefik:v3.7"
+    image: "traefik:v3.8"
     restart_policy: always
     state: started
     pull: false
